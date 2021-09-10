@@ -1,0 +1,4 @@
+"0","d.stations <- sf.read_sf(p.stations)
+"
+"2","Error in sf.read_sf(p.stations) : could not find function ""sf.read_sf""
+"
