@@ -2,7 +2,9 @@
 title: "Lab1"
 author: "Andrew Laws"
 date: "9/10/2021"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -21,12 +23,6 @@ d.counties <- sf::read_sf(p.counties)
 d.stations <- sf::read_sf(p.stations)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
 ```{r EDA}
 glimpse(d.counties)
 glimpse(d.counties)
@@ -36,15 +32,72 @@ d.counties %>% dplyr::select(GEOID10, ALAND10) %>% head()
 
 d.counties %>% dplyr::select(GEOID10:CLASSFP10) %>% head()
 
-d.counties %>% dplyr::select(~(GEOID10:CLASSFP10)) %>% head()
+d.counties %>% dplyr::select(-(GEOID10:CLASSFP10)) %>% head()
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+```{r grouping}
+d.counties %>% group_by(STATEFP10) %>% mutate(stateLandArea = sum(ALAND10))
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+d.counties %>% as_tibble() %>% dplyr::select(-geometry) %>%
+  group_by(STATEFP10) %>%
+  summarise(stateLandArea = sum(ALAND10))
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r plots, echo=FALSE}
+d.counties %>% 
+  ggplot(., aes(x = as.factor(STATEFP10), y = ALAND10)) +
+  geom_boxplot(aes(fill = STATEFP10))
+
+d.counties %>% 
+  ggplot(., aes(x = ALAND10)) +
+  geom_histogram(aes(fill = STATEFP10)) +
+  labs(title = "not the most usefull plot")
+```
+```{r spatial operations}
+d.counties %>% sf::st_crs()
+d.stations %>% sf::st_crs() 
+d.counties %>% sf::st_crs() == d.stations %>% sf::st_crs()
+
+del.counties <- d.counties %>% dplyr::filter(STATEFP10 == 10)
+del.stations <- sf::st_intersection(d.stations, del.counties)
+
+glimpse(del.stations)
+plot(del.stations)
+
+del.counties %>% st_area()
+```
+
+## Task 1
+```{r 1.1}
+#Psuedocode
+#group variables by state and mutate column that holds state area
+#mutate column that divides land area by state area
+
+#create new df
+task1.1 <- d.counties %>% group_by(STATEFP10) %>% 
+  mutate(stateArea = sum(ALAND10 + AWATER10)) %>% 
+  ungroup(.) %>% 
+  mutate(perLandAreaState = ALAND10/stateArea * 100) #create percentage variable by dividing land by state area and multiplying by 100
+
+glimpse(task1.1$perLandAreaState)
+```
+
+```{r 1.2}
+#group by state, find max of awater10/state area using slice
+task1.2 <- task1.2 %>% as_tibble() %>% 
+  group_by(STATEFP10) %>% 
+  mutate(perWaterAreaState = AWATER10/stateArea * 100) %>% 
+  slice(which.max(perWaterAreaState))
+
+#create df with only state and county name columns
+wettest_counties <- task1.2 %>% ungroup() %>% 
+  dplyr::select(STATEFP10, NAMELSAD10)
+wettest_counties
+```
+
+```{r 1.3}
+
+```
+
