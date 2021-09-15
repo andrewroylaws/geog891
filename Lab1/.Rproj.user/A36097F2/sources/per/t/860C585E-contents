@@ -23,11 +23,11 @@ d.counties <- sf::read_sf(p.counties)
 d.stations <- sf::read_sf(p.stations)
 ```
 
-```{r EDA}
+```{r EDA, include=FALSE}
 glimpse(d.counties)
 glimpse(d.counties)
 ```
-```{r functions}
+```{r functions, include=FALSE}
 d.counties %>% dplyr::select(GEOID10, ALAND10) %>% head()
 
 d.counties %>% dplyr::select(GEOID10:CLASSFP10) %>% head()
@@ -36,7 +36,7 @@ d.counties %>% dplyr::select(-(GEOID10:CLASSFP10)) %>% head()
 ```
 
 
-```{r grouping}
+```{r grouping, include=FALSE}
 d.counties %>% group_by(STATEFP10) %>% mutate(stateLandArea = sum(ALAND10))
 
 d.counties %>% as_tibble() %>% dplyr::select(-geometry) %>%
@@ -45,7 +45,7 @@ d.counties %>% as_tibble() %>% dplyr::select(-geometry) %>%
 ```
 
 
-```{r plots, echo=FALSE}
+```{r plots, echo=FALSE, include=FALSE}
 d.counties %>% 
   ggplot(., aes(x = as.factor(STATEFP10), y = ALAND10)) +
   geom_boxplot(aes(fill = STATEFP10))
@@ -55,7 +55,7 @@ d.counties %>%
   geom_histogram(aes(fill = STATEFP10)) +
   labs(title = "not the most usefull plot")
 ```
-```{r spatial operations}
+```{r spatial operations, include=FALSE}
 d.counties %>% sf::st_crs()
 d.stations %>% sf::st_crs() 
 d.counties %>% sf::st_crs() == d.stations %>% sf::st_crs()
@@ -69,24 +69,22 @@ plot(del.stations)
 del.counties %>% st_area()
 ```
 
-## Task 1
-```{r 1.1}
-#Psuedocode
-#group variables by state and mutate column that holds state area
-#mutate column that divides land area by state area
+# Task 1: Basic data manipulation
 
+### 1.1
+```{r 1.1}
 #create new df
-task1.1 <- d.counties %>% group_by(STATEFP10) %>% 
-  mutate(stateArea = sum(ALAND10 + AWATER10)) %>% 
+task1.1 <- d.counties %>% group_by(STATEFP10) %>% #group variables by state and mutate column that holds state area
+  mutate(stateArea = sum(ALAND10 + AWATER10)) %>% #mutate column that divides land area by state area
   ungroup(.) %>% 
   mutate(perLandAreaState = ALAND10/stateArea * 100) #create percentage variable by dividing land by state area and multiplying by 100
 
 glimpse(task1.1$perLandAreaState)
 ```
-
+### 1.2
 ```{r 1.2}
 #group by state, find max of awater10/state area using slice
-task1.2 <- task1.2 %>% as_tibble() %>% 
+task1.2 <- task1.1 %>% as_tibble() %>% 
   group_by(STATEFP10) %>% 
   mutate(perWaterAreaState = AWATER10/stateArea * 100) %>% 
   slice(which.max(perWaterAreaState))
@@ -96,8 +94,81 @@ wettest_counties <- task1.2 %>% ungroup() %>%
   dplyr::select(STATEFP10, NAMELSAD10)
 wettest_counties
 ```
-
+### 1.3
 ```{r 1.3}
+#Use count function 
+task1.3 <- d.counties %>% as_tibble %>% 
+  count(STATEFP10)
+task1.3
+```
+### 1.4
+```{r 1.4}
+#use mutate function to create new column with character length
+task1.4 <- d.stations %>% as_tibble() %>% 
+  mutate(., stNameLen = nchar(STATION_NA)) %>%  
+  slice(which.min(stNameLen)) %>% #slice out the row with the min number of characters
+  dplyr::select(STATION_NA) #retain only station name
 
+task1.4
+```
+
+# Task 2: Plotting attribute data
+
+### 2.1
+```{r 2.1, echo=FALSE}
+d.counties %>% 
+  ggplot(aes(x = ALAND10, y = AWATER10)) + #set land on x and water on y
+  geom_point(aes(color = STATEFP10)) + #set color aestethic to state fips code
+  labs(title = "Relationship of land and water areas", x = "Land Area",
+       y = "Water Area", col = "State Code")
+```
+
+### 2.2
+```{r 2.2, echo=FALSE}
+d.stations %>% 
+  ggplot(aes(x = Drainage_A)) + #set drainage ares on x axis
+  geom_histogram() + #create histogram
+  labs(title = "Station Drainage Area Histogram", x = "Drainage Area Size",
+       y = "Count")
+```
+
+### 2.3
+```{r 2.3, echo=FALSE}
+#create new df
+task2.2 <- d.stations %>% 
+  #get state using stubstring function
+  mutate(stateName = substr(STATION_NA, nchar(STATION_NA)-1, nchar(STATION_NA))) 
+
+task2.2 %>% ggplot(aes(x = Drainage_A, fill = stateName)) + #set drainage ares on x axis
+  geom_histogram() + #create histogram
+  labs(title = "Station Drainage Area Histogram", x = "Drainage Area Size",
+       y = "Count", col = "State")
+```
+
+# Task 3: Write a function
+
+### 3.1
+```{r 3.1}
+task3.1 <- function(numVect){
+  isVec <- is.vector(numVect) #test if it is vector
+  isNum <- is.numeric(numVect) #test if list is all numeric
+  if(isVec == TRUE & isNum == TRUE) {
+    statList <- as.list(c(mean(numVect), median(numVect), max(numVect), min(numVect)))
+    print(statList)
+    vecMean <- mean(numVect)
+    vecMed <- median(numVect)
+    vecMax <- max(numVect)
+    vecMin <- min(numVect)
+   #print(vecMean)
+  } else{
+    print("Troubleshooting errors:")
+    print("Vector:")
+    print(isVec)
+    print("Numbers:")
+    print(isNum)
+  }
+}
+
+task3.1(c(1, 3, 4))
 ```
 
