@@ -1,0 +1,68 @@
+---
+title: "Practice"
+author: "Andrew Laws"
+date: "9/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(sf)
+library(sp)
+
+#set data
+p.counties <- "./data/orig/County_Boundaries.shp"
+p.stations <- "./data/orig/Non-Tidal_Water_Quality_Monitoring_Stations_in_the_Chesapeake_Bay.shp"
+
+#load into sf
+d.counties <- sf::read_sf(p.counties)
+d.stations <- sf::read_sf(p.stations)
+```
+
+```{r EDA, include=FALSE}
+glimpse(d.counties)
+glimpse(d.counties)
+```
+```{r functions, include=FALSE}
+d.counties %>% dplyr::select(GEOID10, ALAND10) %>% head()
+
+d.counties %>% dplyr::select(GEOID10:CLASSFP10) %>% head()
+
+d.counties %>% dplyr::select(-(GEOID10:CLASSFP10)) %>% head()
+```
+
+
+```{r grouping, include=FALSE}
+d.counties %>% group_by(STATEFP10) %>% mutate(stateLandArea = sum(ALAND10))
+
+d.counties %>% as_tibble() %>% dplyr::select(-geometry) %>%
+  group_by(STATEFP10) %>%
+  summarise(stateLandArea = sum(ALAND10))
+```
+
+
+```{r plots, echo=FALSE, include=FALSE}
+d.counties %>% 
+  ggplot(., aes(x = as.factor(STATEFP10), y = ALAND10)) +
+  geom_boxplot(aes(fill = STATEFP10))
+
+d.counties %>% 
+  ggplot(., aes(x = ALAND10)) +
+  geom_histogram(aes(fill = STATEFP10)) +
+  labs(title = "not the most usefull plot")
+```
+```{r spatial operations, include=FALSE}
+d.counties %>% sf::st_crs()
+d.stations %>% sf::st_crs() 
+d.counties %>% sf::st_crs() == d.stations %>% sf::st_crs()
+
+del.counties <- d.counties %>% dplyr::filter(STATEFP10 == 10)
+del.stations <- sf::st_intersection(d.stations, del.counties)
+
+glimpse(del.stations)
+plot(del.stations)
+
+del.counties %>% st_area()
+```

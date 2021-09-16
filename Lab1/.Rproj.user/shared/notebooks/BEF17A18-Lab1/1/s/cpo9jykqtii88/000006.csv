@@ -1,4 +1,0 @@
-"0","#Use count function "
-"0","task1.3 <- d.counties %>% as_tibble %>% "
-"0","  count(STATEFP10)"
-"0","task1.3"
