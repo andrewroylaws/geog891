@@ -56,3 +56,29 @@ buff_streams <- sf::st_buffer(streams, dist = 800) #800 meters equals 1/2 mile
 park_stream <- sf::st_intersection(buff_streams, parks)
 
 tm_shape(park_stream) + tm_dots(col = "Waterbody_", size = 2)
+
+#GISTools
+poly.areas(counties) #throws error b/c its in sf
+
+counties %>% as_Spatial() %>% poly.areas() #converts to sp but is in WGS84, needs to be projected
+
+parks_p <- sf::st_transform(parks, 26914)
+counties_p <- sf::st_transform(counties, 26914)
+
+counties_p %>% as_Spatial() %>% poly.areas()
+
+counties %>% sf::st_transform(., 26914) %>% sf::st_area() 
+
+lc_303ds_p <- sf::st_transform(lc_303ds, 26914)
+lc_parks_p <- sf::st_transform(lc_parks, 26914)
+
+dist_proj <- sf::st_distance(lc_303ds_p, lc_parks_p)
+dist_unpr <- sf::st_distance(lc_303ds, lc_parks)
+
+dist_proj
+dist_unpr
+
+dist_diff <- dist_proj - dist_unpr
+dist_diff <- daa.frame()
+
+hist(dist_diff)
