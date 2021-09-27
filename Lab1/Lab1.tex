@@ -110,281 +110,329 @@
 \begin{document}
 \maketitle
 
-\hypertarget{r-markdown}{%
-\subsection{R Markdown}\label{r-markdown}}
+\hypertarget{task-1-basic-data-manipulation}{%
+\section{Task 1: Basic data
+manipulation}\label{task-1-basic-data-manipulation}}
 
-This is an R Markdown document. Markdown is a simple formatting syntax
-for authoring HTML, PDF, and MS Word documents. For more details on
-using R Markdown see \url{http://rmarkdown.rstudio.com}.
-
-When you click the \textbf{Knit} button a document will be generated
-that includes both content as well as the output of any embedded R code
-chunks within the document. You can embed an R code chunk like this:
+\hypertarget{section}{%
+\subsubsection{1.1}\label{section}}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{glimpse}\NormalTok{(d.counties)}
+\CommentTok{\#create new df}
+\NormalTok{task1}\FloatTok{.1} \OtherTok{\textless{}{-}}\NormalTok{ d.counties }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{group\_by}\NormalTok{(STATEFP10) }\SpecialCharTok{\%\textgreater{}\%} \CommentTok{\#group variables by state and mutate column that holds state area}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{stateArea =} \FunctionTok{sum}\NormalTok{(ALAND10 }\SpecialCharTok{+}\NormalTok{ AWATER10)) }\SpecialCharTok{\%\textgreater{}\%} \CommentTok{\#mutate column that divides land area by state area}
+  \FunctionTok{ungroup}\NormalTok{(.) }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{perLandAreaState =}\NormalTok{ ALAND10}\SpecialCharTok{/}\NormalTok{stateArea }\SpecialCharTok{*} \DecValTok{100}\NormalTok{) }\CommentTok{\#create percentage variable by dividing land by state area and multiplying by 100}
+
+\FunctionTok{glimpse}\NormalTok{(task1}\FloatTok{.1}\SpecialCharTok{$}\NormalTok{perLandAreaState)}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-## Rows: 207
-## Columns: 21
-## $ OBJECTID   <int> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, ~
-## $ STATEFP10  <chr> "51", "51", "51", "51", "42", "42", "42", "42", "42", "42",~
-## $ COUNTYFP10 <chr> "540", "510", "530", "600", "021", "001", "061", "035", "09~
-## $ COUNTYNS10 <chr> "01789068", "01498415", "01498417", "01789070", "01213662",~
-## $ GEOID10    <chr> "51540", "51510", "51530", "51600", "42021", "42001", "4206~
-## $ NAME10     <chr> "Charlottesville", "Alexandria", "Buena Vista", "Fairfax", ~
-## $ NAMELSAD10 <chr> "Charlottesville city", "Alexandria city", "Buena Vista cit~
-## $ LSAD10     <chr> "25", "25", "25", "25", "06", "06", "06", "06", "06", "06",~
-## $ CLASSFP10  <chr> "C7", "C7", "C7", "C7", "H1", "H1", "H1", "H1", "H1", "H1",~
-## $ MTFCC10    <chr> "G4020", "G4020", "G4020", "G4020", "G4020", "G4020", "G402~
-## $ CSAFP10    <chr> NA, "548", NA, "548", NA, "564", NA, "558", NA, NA, NA, NA,~
-## $ CBSAFP10   <chr> "16820", "47900", NA, "47900", "27780", "23900", "26500", "~
-## $ METDIVFP10 <chr> NA, "47894", NA, "47894", NA, NA, NA, NA, NA, NA, NA, NA, N~
-## $ FUNCSTAT10 <chr> "F", "F", "F", "F", "A", "A", "A", "A", "A", "A", "A", "A",~
-## $ ALAND10    <dbl> 26517362, 38919733, 17362236, 16159465, 1782819861, 1343342~
-## $ AWATER10   <dbl> 52974, 1140371, 223855, 95054, 13680552, 8081576, 37883358,~
-## $ INTPTLAT10 <chr> "+38.0376579", "+38.8183429", "+37.7316634", "+38.8531833",~
-## $ INTPTLON10 <chr> "-078.4853806", "-077.0820263", "-079.3563746", "-077.29902~
-## $ Shape_Leng <dbl> 47968.96, 43943.77, 34310.52, 29395.95, 260532.87, 195653.0~
-## $ Shape_Area <dbl> 42902561, 66086698, 28163001, 26840867, 3109865228, 2297092~
-## $ geometry   <MULTIPOLYGON [°]> MULTIPOLYGON (((-78.47071 3..., MULTIPOLYGON (~
+##  num [1:207] 0.0342 0.0502 0.0224 0.0208 2.2555 ...
 \end{verbatim}
+
+\hypertarget{section-1}{%
+\subsubsection{1.2}\label{section-1}}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{glimpse}\NormalTok{(d.counties)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Rows: 207
-## Columns: 21
-## $ OBJECTID   <int> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, ~
-## $ STATEFP10  <chr> "51", "51", "51", "51", "42", "42", "42", "42", "42", "42",~
-## $ COUNTYFP10 <chr> "540", "510", "530", "600", "021", "001", "061", "035", "09~
-## $ COUNTYNS10 <chr> "01789068", "01498415", "01498417", "01789070", "01213662",~
-## $ GEOID10    <chr> "51540", "51510", "51530", "51600", "42021", "42001", "4206~
-## $ NAME10     <chr> "Charlottesville", "Alexandria", "Buena Vista", "Fairfax", ~
-## $ NAMELSAD10 <chr> "Charlottesville city", "Alexandria city", "Buena Vista cit~
-## $ LSAD10     <chr> "25", "25", "25", "25", "06", "06", "06", "06", "06", "06",~
-## $ CLASSFP10  <chr> "C7", "C7", "C7", "C7", "H1", "H1", "H1", "H1", "H1", "H1",~
-## $ MTFCC10    <chr> "G4020", "G4020", "G4020", "G4020", "G4020", "G4020", "G402~
-## $ CSAFP10    <chr> NA, "548", NA, "548", NA, "564", NA, "558", NA, NA, NA, NA,~
-## $ CBSAFP10   <chr> "16820", "47900", NA, "47900", "27780", "23900", "26500", "~
-## $ METDIVFP10 <chr> NA, "47894", NA, "47894", NA, NA, NA, NA, NA, NA, NA, NA, N~
-## $ FUNCSTAT10 <chr> "F", "F", "F", "F", "A", "A", "A", "A", "A", "A", "A", "A",~
-## $ ALAND10    <dbl> 26517362, 38919733, 17362236, 16159465, 1782819861, 1343342~
-## $ AWATER10   <dbl> 52974, 1140371, 223855, 95054, 13680552, 8081576, 37883358,~
-## $ INTPTLAT10 <chr> "+38.0376579", "+38.8183429", "+37.7316634", "+38.8531833",~
-## $ INTPTLON10 <chr> "-078.4853806", "-077.0820263", "-079.3563746", "-077.29902~
-## $ Shape_Leng <dbl> 47968.96, 43943.77, 34310.52, 29395.95, 260532.87, 195653.0~
-## $ Shape_Area <dbl> 42902561, 66086698, 28163001, 26840867, 3109865228, 2297092~
-## $ geometry   <MULTIPOLYGON [°]> MULTIPOLYGON (((-78.47071 3..., MULTIPOLYGON (~
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{d.counties }\SpecialCharTok{\%\textgreater{}\%}\NormalTok{ dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(GEOID10, ALAND10) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{head}\NormalTok{()}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Simple feature collection with 6 features and 2 fields
-## Geometry type: MULTIPOLYGON
-## Dimension:     XY
-## Bounding box:  xmin: -79.38264 ymin: 37.69574 xmax: -76.95493 ymax: 40.72605
-## Geodetic CRS:  WGS 84
-## # A tibble: 6 x 3
-##   GEOID10    ALAND10                                                    geometry
-##   <chr>        <dbl>                                          <MULTIPOLYGON [°]>
-## 1 51540     26517362 (((-78.47071 38.04872, -78.47033 38.04801, -78.47009 38.04~
-## 2 51510     38919733 (((-77.06247 38.79497, -77.06268 38.79504, -77.06273 38.79~
-## 3 51530     17362236 (((-79.36681 37.72723, -79.36687 37.72744, -79.36704 37.72~
-## 4 51600     16159465 (((-77.31427 38.86701, -77.31414 38.867, -77.31398 38.8669~
-## 5 42021   1782819861 (((-79.03392 40.3165, -79.03359 40.31674, -79.0322 40.3173~
-## 6 42001   1343342705 (((-77.46596 39.85977, -77.46596 39.85983, -77.46599 39.86~
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{d.counties }\SpecialCharTok{\%\textgreater{}\%}\NormalTok{ dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(GEOID10}\SpecialCharTok{:}\NormalTok{CLASSFP10) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{head}\NormalTok{()}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Simple feature collection with 6 features and 5 fields
-## Geometry type: MULTIPOLYGON
-## Dimension:     XY
-## Bounding box:  xmin: -79.38264 ymin: 37.69574 xmax: -76.95493 ymax: 40.72605
-## Geodetic CRS:  WGS 84
-## # A tibble: 6 x 6
-##   GEOID10 NAME10          NAMELSAD10           LSAD10 CLASSFP10                  geometry
-##   <chr>   <chr>           <chr>                <chr>  <chr>            <MULTIPOLYGON [°]>
-## 1 51540   Charlottesville Charlottesville city 25     C7        (((-78.47071 38.04872, -~
-## 2 51510   Alexandria      Alexandria city      25     C7        (((-77.06247 38.79497, -~
-## 3 51530   Buena Vista     Buena Vista city     25     C7        (((-79.36681 37.72723, -~
-## 4 51600   Fairfax         Fairfax city         25     C7        (((-77.31427 38.86701, -~
-## 5 42021   Cambria         Cambria County       06     H1        (((-79.03392 40.3165, -7~
-## 6 42001   Adams           Adams County         06     H1        (((-77.46596 39.85977, -~
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{d.counties }\SpecialCharTok{\%\textgreater{}\%}\NormalTok{ dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{(GEOID10}\SpecialCharTok{:}\NormalTok{CLASSFP10)) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{head}\NormalTok{()}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Simple feature collection with 6 features and 15 fields
-## Geometry type: MULTIPOLYGON
-## Dimension:     XY
-## Bounding box:  xmin: -79.38264 ymin: 37.69574 xmax: -76.95493 ymax: 40.72605
-## Geodetic CRS:  WGS 84
-## # A tibble: 6 x 16
-##   OBJECTID STATEFP10 COUNTYFP10 COUNTYNS10 MTFCC10 CSAFP10 CBSAFP10 METDIVFP10
-##      <int> <chr>     <chr>      <chr>      <chr>   <chr>   <chr>    <chr>     
-## 1        1 51        540        01789068   G4020   <NA>    16820    <NA>      
-## 2        2 51        510        01498415   G4020   548     47900    47894     
-## 3        3 51        530        01498417   G4020   <NA>    <NA>     <NA>      
-## 4        4 51        600        01789070   G4020   548     47900    47894     
-## 5        5 42        021        01213662   G4020   <NA>    27780    <NA>      
-## 6        6 42        001        01213656   G4020   564     23900    <NA>      
-## # ... with 8 more variables: FUNCSTAT10 <chr>, ALAND10 <dbl>, AWATER10 <dbl>,
-## #   INTPTLAT10 <chr>, INTPTLON10 <chr>, Shape_Leng <dbl>, Shape_Area <dbl>,
-## #   geometry <MULTIPOLYGON [°]>
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{d.counties }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{group\_by}\NormalTok{(STATEFP10) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{mutate}\NormalTok{(}\AttributeTok{stateLandArea =} \FunctionTok{sum}\NormalTok{(ALAND10))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Simple feature collection with 207 features and 21 fields
-## Geometry type: MULTIPOLYGON
-## Dimension:     XY
-## Bounding box:  xmin: -81.01449 ymin: 36.55035 xmax: -74.16468 ymax: 44.09697
-## Geodetic CRS:  WGS 84
-## # A tibble: 207 x 22
-## # Groups:   STATEFP10 [7]
-##    OBJECTID STATEFP10 COUNTYFP10 COUNTYNS10 GEOID10 NAME10   NAMELSAD10   LSAD10
-##  *    <int> <chr>     <chr>      <chr>      <chr>   <chr>    <chr>        <chr> 
-##  1        1 51        540        01789068   51540   Charlot~ Charlottesv~ 25    
-##  2        2 51        510        01498415   51510   Alexand~ Alexandria ~ 25    
-##  3        3 51        530        01498417   51530   Buena V~ Buena Vista~ 25    
-##  4        4 51        600        01789070   51600   Fairfax  Fairfax city 25    
-##  5        5 42        021        01213662   42021   Cambria  Cambria Cou~ 06    
-##  6        6 42        001        01213656   42001   Adams    Adams County 06    
-##  7        7 42        061        01213672   42061   Hunting~ Huntingdon ~ 06    
-##  8        8 42        035        01214721   42035   Clinton  Clinton Cou~ 06    
-##  9        9 42        093        01213681   42093   Montour  Montour Cou~ 06    
-## 10       10 42        117        01209189   42117   Tioga    Tioga County 06    
-## # ... with 197 more rows, and 14 more variables: CLASSFP10 <chr>,
-## #   MTFCC10 <chr>, CSAFP10 <chr>, CBSAFP10 <chr>, METDIVFP10 <chr>,
-## #   FUNCSTAT10 <chr>, ALAND10 <dbl>, AWATER10 <dbl>, INTPTLAT10 <chr>,
-## #   INTPTLON10 <chr>, Shape_Leng <dbl>, Shape_Area <dbl>,
-## #   geometry <MULTIPOLYGON [°]>, stateLandArea <dbl>
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{d.counties }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{as\_tibble}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}\NormalTok{ dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{geometry) }\SpecialCharTok{\%\textgreater{}\%} 
+\CommentTok{\#group by state, find max of awater10/state area using slice}
+\NormalTok{task1}\FloatTok{.2} \OtherTok{\textless{}{-}}\NormalTok{ task1}\FloatTok{.1} \SpecialCharTok{\%\textgreater{}\%} \FunctionTok{as\_tibble}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%} 
   \FunctionTok{group\_by}\NormalTok{(STATEFP10) }\SpecialCharTok{\%\textgreater{}\%} 
-  \FunctionTok{summarise}\NormalTok{(}\AttributeTok{stateLandArea =} \FunctionTok{sum}\NormalTok{(ALAND10))}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{perWaterAreaState =}\NormalTok{ AWATER10}\SpecialCharTok{/}\NormalTok{stateArea }\SpecialCharTok{*} \DecValTok{100}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{slice}\NormalTok{(}\FunctionTok{which.max}\NormalTok{(perWaterAreaState))}
+
+\CommentTok{\#create df with only state and county name columns}
+\NormalTok{wettest\_counties }\OtherTok{\textless{}{-}}\NormalTok{ task1}\FloatTok{.2} \SpecialCharTok{\%\textgreater{}\%} \FunctionTok{ungroup}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%} 
+\NormalTok{  dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(STATEFP10, NAMELSAD10)}
+\NormalTok{wettest\_counties}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
 ## # A tibble: 7 x 2
-##   STATEFP10 stateLandArea
-##   <chr>             <dbl>
-## 1 10           5046703785
-## 2 11            158114680
-## 3 24          25141638381
-## 4 36          40599407643
-## 5 42          78174288199
-## 6 51          69471293533
-## 7 54          20781223859
+##   STATEFP10 NAMELSAD10          
+##   <chr>     <chr>               
+## 1 10        Sussex County       
+## 2 11        District of Columbia
+## 3 24        Dorchester County   
+## 4 36        Cayuga County       
+## 5 42        Lancaster County    
+## 6 51        Accomack County     
+## 7 54        Greenbrier County
 \end{verbatim}
 
-\includegraphics{Lab1_files/figure-latex/plots-1.pdf}
+\hypertarget{section-2}{%
+\subsubsection{1.3}\label{section-2}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#Use count function }
+\NormalTok{task1}\FloatTok{.3} \OtherTok{\textless{}{-}}\NormalTok{ d.counties }\SpecialCharTok{\%\textgreater{}\%}\NormalTok{ as\_tibble }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{count}\NormalTok{(STATEFP10)}
+\NormalTok{task1}\FloatTok{.3}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 7 x 2
+##   STATEFP10     n
+##   <chr>     <int>
+## 1 10            3
+## 2 11            1
+## 3 24           24
+## 4 36           20
+## 5 42           43
+## 6 51          102
+## 7 54           14
+\end{verbatim}
+
+\hypertarget{section-3}{%
+\subsubsection{1.4}\label{section-3}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#use mutate function to create new column with character length}
+\NormalTok{task1}\FloatTok{.4} \OtherTok{\textless{}{-}}\NormalTok{ d.stations }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{as\_tibble}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{mutate}\NormalTok{(., }\AttributeTok{stNameLen =} \FunctionTok{nchar}\NormalTok{(STATION\_NA)) }\SpecialCharTok{\%\textgreater{}\%}  
+  \FunctionTok{slice}\NormalTok{(}\FunctionTok{which.min}\NormalTok{(stNameLen)) }\SpecialCharTok{\%\textgreater{}\%} \CommentTok{\#slice out the row with the min number of characters}
+\NormalTok{  dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(STATION\_NA) }\CommentTok{\#retain only station name}
+
+\NormalTok{task1}\FloatTok{.4}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 1 x 1
+##   STATION_NA                
+##   <chr>                     
+## 1 ABRAM CREEK AT OAKMONT, WV
+\end{verbatim}
+
+\hypertarget{task-2-plotting-attribute-data}{%
+\section{Task 2: Plotting attribute
+data}\label{task-2-plotting-attribute-data}}
+
+\hypertarget{section-4}{%
+\subsubsection{2.1}\label{section-4}}
+
+\includegraphics{Lab1_files/figure-latex/2.1-1.pdf}
+
+\hypertarget{section-5}{%
+\subsubsection{2.2}\label{section-5}}
 
 \begin{verbatim}
 ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 \end{verbatim}
 
-\includegraphics{Lab1_files/figure-latex/plots-2.pdf}
+\includegraphics{Lab1_files/figure-latex/2.2-1.pdf}
+
+\hypertarget{section-6}{%
+\subsubsection{2.3}\label{section-6}}
+
+\begin{verbatim}
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+\end{verbatim}
+
+\includegraphics{Lab1_files/figure-latex/2.3-1.pdf}
+
+\hypertarget{task-3-write-a-function}{%
+\section{Task 3: Write a function}\label{task-3-write-a-function}}
+
+\hypertarget{section-7}{%
+\subsubsection{3.1}\label{section-7}}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{d.counties }\SpecialCharTok{\%\textgreater{}\%}\NormalTok{ sf}\SpecialCharTok{::}\FunctionTok{st\_crs}\NormalTok{()}
+\NormalTok{task3}\FloatTok{.1} \OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(numVect)\{}
+\NormalTok{  isVec }\OtherTok{\textless{}{-}} \FunctionTok{is.vector}\NormalTok{(numVect) }\CommentTok{\#test if it is vector}
+\NormalTok{  isNum }\OtherTok{\textless{}{-}} \FunctionTok{is.numeric}\NormalTok{(numVect) }\CommentTok{\#test if list is all numeric}
+  \ControlFlowTok{if}\NormalTok{(isVec }\SpecialCharTok{==} \ConstantTok{TRUE} \SpecialCharTok{\&}\NormalTok{ isNum }\SpecialCharTok{==} \ConstantTok{TRUE}\NormalTok{) \{ }\CommentTok{\#check that tests are both TRUE}
+    
+\NormalTok{    statList }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}\FunctionTok{mean}\NormalTok{(numVect), }\FunctionTok{median}\NormalTok{(numVect), }\FunctionTok{max}\NormalTok{(numVect), }\FunctionTok{min}\NormalTok{(numVect)) }\CommentTok{\#create list with stat values}
+    
+\NormalTok{    sortVec }\OtherTok{\textless{}{-}} \FunctionTok{sort}\NormalTok{(numVect) }\CommentTok{\#sort vector from least to greatest}
+
+\NormalTok{    result }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(statList, sortVec) }\CommentTok{\#combines desired data into one object for return function}
+     
+    \FunctionTok{return}\NormalTok{(result) }\CommentTok{\#return result}
+    
+\NormalTok{  \} }\ControlFlowTok{else}\NormalTok{\{}
+    \FunctionTok{cat}\NormalTok{(}\StringTok{"Troubleshooting Errors}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{) }\CommentTok{\#provide information on why vector failed tests}
+    \FunctionTok{cat}\NormalTok{(}\StringTok{"Vector: "}\NormalTok{, isVec, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{) }\CommentTok{\#provides details on whether input data was vector or not}
+    \FunctionTok{cat}\NormalTok{(}\StringTok{"Numbers:"}\NormalTok{, isNum, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{) }\CommentTok{\#provides detaisl on whether input data contained all numbers}
+\NormalTok{  \}}
+\NormalTok{\}}
+
+\CommentTok{\#Test 1}
+\FunctionTok{task3.1}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{0}\NormalTok{, }\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{))}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-## Coordinate Reference System:
-##   User input: WGS 84 
-##   wkt:
-## GEOGCRS["WGS 84",
-##     DATUM["World Geodetic System 1984",
-##         ELLIPSOID["WGS 84",6378137,298.257223563,
-##             LENGTHUNIT["metre",1]]],
-##     PRIMEM["Greenwich",0,
-##         ANGLEUNIT["degree",0.0174532925199433]],
-##     CS[ellipsoidal,2],
-##         AXIS["latitude",north,
-##             ORDER[1],
-##             ANGLEUNIT["degree",0.0174532925199433]],
-##         AXIS["longitude",east,
-##             ORDER[2],
-##             ANGLEUNIT["degree",0.0174532925199433]],
-##     ID["EPSG",4326]]
+## [[1]]
+## [[1]][[1]]
+## [1] 0
+## 
+## [[1]][[2]]
+## [1] 0
+## 
+## [[1]][[3]]
+## [1] 1
+## 
+## [[1]][[4]]
+## [1] -1
+## 
+## 
+## [[2]]
+## [1] -1  0  1
 \end{verbatim}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{d.stations }\SpecialCharTok{\%\textgreater{}\%}\NormalTok{ sf}\SpecialCharTok{::}\FunctionTok{st\_crs}\NormalTok{() }
+\CommentTok{\#Test 2}
+\FunctionTok{task3.1}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\DecValTok{10}\NormalTok{, }\DecValTok{100}\NormalTok{, }\DecValTok{1000}\NormalTok{))}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-## Coordinate Reference System:
-##   User input: WGS 84 
-##   wkt:
-## GEOGCRS["WGS 84",
-##     DATUM["World Geodetic System 1984",
-##         ELLIPSOID["WGS 84",6378137,298.257223563,
-##             LENGTHUNIT["metre",1]]],
-##     PRIMEM["Greenwich",0,
-##         ANGLEUNIT["degree",0.0174532925199433]],
-##     CS[ellipsoidal,2],
-##         AXIS["latitude",north,
-##             ORDER[1],
-##             ANGLEUNIT["degree",0.0174532925199433]],
-##         AXIS["longitude",east,
-##             ORDER[2],
-##             ANGLEUNIT["degree",0.0174532925199433]],
-##     ID["EPSG",4326]]
+## [[1]]
+## [[1]][[1]]
+## [1] 370
+## 
+## [[1]][[2]]
+## [1] 100
+## 
+## [[1]][[3]]
+## [1] 1000
+## 
+## [[1]][[4]]
+## [1] 10
+## 
+## 
+## [[2]]
+## [1]   10  100 1000
 \end{verbatim}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{d.counties }\SpecialCharTok{\%\textgreater{}\%}\NormalTok{ sf}\SpecialCharTok{::}\FunctionTok{st\_crs}\NormalTok{() }\SpecialCharTok{==}\NormalTok{ d.stations }\SpecialCharTok{\%\textgreater{}\%}\NormalTok{ sf}\SpecialCharTok{::}\FunctionTok{st\_crs}\NormalTok{()}
+\CommentTok{\#Test 3}
+\FunctionTok{task3.1}\NormalTok{(}\FunctionTok{c}\NormalTok{(.}\DecValTok{1}\NormalTok{, .}\DecValTok{001}\NormalTok{, }\FloatTok{1e8}\NormalTok{))}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-## [1] TRUE
+## [[1]]
+## [[1]][[1]]
+## [1] 33333333
+## 
+## [[1]][[2]]
+## [1] 0.1
+## 
+## [[1]][[3]]
+## [1] 1e+08
+## 
+## [[1]][[4]]
+## [1] 0.001
+## 
+## 
+## [[2]]
+## [1] 1e-03 1e-01 1e+08
 \end{verbatim}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{del.counties }\OtherTok{\textless{}{-}}\NormalTok{ d.counties }\SpecialCharTok{\%\textgreater{}\%}\NormalTok{ dplyr}\SpecialCharTok{::}\FunctionTok{filter}\NormalTok{(STATEFP10 }\SpecialCharTok{==} \DecValTok{10}\NormalTok{)}
-\NormalTok{del.stations }\OtherTok{\textless{}{-}}\NormalTok{ sf}\SpecialCharTok{::}\FunctionTok{st\_intersection}\NormalTok{(d.stations, del.counties)}
+\CommentTok{\#Test 4}
+\FunctionTok{task3.1}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\StringTok{"a"}\NormalTok{, }\StringTok{"b"}\NormalTok{, }\StringTok{"c"}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Troubleshooting Errors
+## Vector:  TRUE 
+## Numbers: FALSE
+\end{verbatim}
+
+\hypertarget{task-4-spatial-analysis}{%
+\section{Task 4: Spatial analysis}\label{task-4-spatial-analysis}}
+
+\hypertarget{section-8}{%
+\subsubsection{4.1}\label{section-8}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{st\_is\_valid}\NormalTok{(d.counties) }\CommentTok{\#was throwing an error so threw in to check}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   [1]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+##  [13]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+##  [25]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+##  [37]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+##  [49]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+##  [61]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+##  [73]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+##  [85]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+##  [97]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [109]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [121]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [133]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [145]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [157]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [169]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [181]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [193]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE
+## [205]  TRUE FALSE  TRUE
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{d.counties2 }\OtherTok{\textless{}{-}} \FunctionTok{st\_make\_valid}\NormalTok{(d.counties) }\CommentTok{\#make data valid for work}
+\FunctionTok{st\_is\_valid}\NormalTok{(d.counties2) }\CommentTok{\#check success of make\_valid}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+##  [16] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+##  [31] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+##  [46] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+##  [61] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+##  [76] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+##  [91] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [106] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [121] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [136] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [151] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [166] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [181] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [196] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{st\_is\_valid}\NormalTok{(d.stations) }\CommentTok{\#check stations while at it}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+##  [16] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+##  [31] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+##  [46] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+##  [61] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+##  [76] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+##  [91] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [106] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [121] TRUE TRUE
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{d.stations2 }\OtherTok{\textless{}{-}}\NormalTok{ sf}\SpecialCharTok{::}\FunctionTok{st\_intersection}\NormalTok{(d.counties2, d.stations) }\CommentTok{\#intersect so stations get counties df info}
 \end{Highlighting}
 \end{Shaded}
 
@@ -395,69 +443,76 @@ chunks within the document. You can embed an R code chunk like this:
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{glimpse}\NormalTok{(del.stations)}
+\NormalTok{task4}\FloatTok{.1} \OtherTok{\textless{}{-}}\NormalTok{ d.stations2 }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{as\_tibble}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%} \CommentTok{\#count number of features per STATEFP10}
+  \FunctionTok{count}\NormalTok{(STATEFP10)}
+
+\NormalTok{task4}\FloatTok{.1}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-## Rows: 2
-## Columns: 32
-## $ OBJECTID   <int> 2, 1
-## $ MAP_ID     <int> 2, 1
-## $ USGS_STATI <int> 1488500, 1487000
-## $ STATION_NA <chr> "MARSHYHOPE CREEK NEAR ADAMSVILLE, DE", "NANTICOKE RIVER NE~
-## $ MAJOR_WATE <chr> "Eastern Shore", "Eastern Shore"
-## $ Drainage_A <dbl> 46.79998, 75.39997
-## $ START_DATE <int> 2005, 1998
-## $ END_DATE   <int> 2018, 2018
-## $ Lat        <dbl> 38.84969, 38.72833
-## $ Long       <dbl> -75.67311, -75.56186
-## $ STAID      <chr> "01488500", "01487000"
-## $ OBJECTID.1 <int> 120, 122
-## $ STATEFP10  <chr> "10", "10"
-## $ COUNTYFP10 <chr> "001", "005"
-## $ COUNTYNS10 <chr> "00217271", "00217269"
-## $ GEOID10    <chr> "10001", "10005"
-## $ NAME10     <chr> "Kent", "Sussex"
-## $ NAMELSAD10 <chr> "Kent County", "Sussex County"
-## $ LSAD10     <chr> "06", "06"
-## $ CLASSFP10  <chr> "H1", "H1"
-## $ MTFCC10    <chr> "G4020", "G4020"
-## $ CSAFP10    <chr> NA, NA
-## $ CBSAFP10   <chr> "20100", "42580"
-## $ METDIVFP10 <chr> NA, NA
-## $ FUNCSTAT10 <chr> "A", "A"
-## $ ALAND10    <dbl> 1518196116, 2424432871
-## $ AWATER10   <dbl> 549470508, 674204700
-## $ INTPTLAT10 <chr> "+39.0970884", "+38.6775108"
-## $ INTPTLON10 <chr> "-075.5029819", "-075.3354950"
-## $ Shape_Leng <dbl> 269441.5, 302135.9
-## $ Shape_Area <dbl> 3437654275, 5092675716
-## $ geometry   <POINT [°]> POINT (-75.67311 38.8497), POINT (-75.56186 38.72834)
+## # A tibble: 7 x 2
+##   STATEFP10     n
+##   <chr>     <int>
+## 1 10            2
+## 2 11            3
+## 3 24           31
+## 4 36            4
+## 5 42           35
+## 6 51           37
+## 7 54           10
 \end{verbatim}
+
+\hypertarget{section-9}{%
+\subsubsection{4.2}\label{section-9}}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{plot}\NormalTok{(del.stations)}
+\CommentTok{\# NY FIPS = 36}
+\NormalTok{task4}\FloatTok{.2} \OtherTok{\textless{}{-}}\NormalTok{ d.counties2 }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(STATEFP10 }\SpecialCharTok{==} \DecValTok{36}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} \CommentTok{\# select counties in NY}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{polyArea =} \FunctionTok{st\_area}\NormalTok{(geometry)) }\SpecialCharTok{\%\textgreater{}\%}  \CommentTok{\#calculate area of counties}
+  \FunctionTok{as\_tibble}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%} \CommentTok{\#convert to tibble}
+  \FunctionTok{summarize}\NormalTok{(}\FunctionTok{mean}\NormalTok{(polyArea)) }\CommentTok{\#calculate mean}
+
+\NormalTok{task4}\FloatTok{.2}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-## Warning: plotting the first 10 out of 31 attributes; use max.plot = 31 to plot
-## all
+## # A tibble: 1 x 1
+##   `mean(polyArea)`
+##              [m^2]
+## 1      2088695951.
 \end{verbatim}
 
-\includegraphics{Lab1_files/figure-latex/spatial operations-1.pdf}
+\hypertarget{section-10}{%
+\subsubsection{4.3}\label{section-10}}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{del.counties }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{st\_area}\NormalTok{()}
+\NormalTok{meanDrain }\OtherTok{\textless{}{-}}\NormalTok{ d.stations2 }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{as\_tibble}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%} \CommentTok{\#d.stations2 was updated in task 4.1 so no spatial ops needed}
+  \FunctionTok{group\_by}\NormalTok{(STATEFP10) }\SpecialCharTok{\%\textgreater{}\%} \CommentTok{\#group by state }
+  \FunctionTok{summarize}\NormalTok{(}\FunctionTok{mean}\NormalTok{(Drainage\_A))}
+
+\NormalTok{maxPos }\OtherTok{\textless{}{-}} \FunctionTok{which.max}\NormalTok{(meanDrain}\SpecialCharTok{$}\StringTok{\textasciigrave{}}\AttributeTok{mean(Drainage\_A)}\StringTok{\textasciigrave{}}\NormalTok{) }\CommentTok{\#find the rowwhere the largest mean drainage is}
+
+\NormalTok{task4}\FloatTok{.3} \OtherTok{\textless{}{-}}\NormalTok{ meanDrain[maxPos,] }\CommentTok{\#subset tibble}
+
+\NormalTok{task4}\FloatTok{.3}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-## Units: [m^2]
-## [1] 2065913935 3096294979 1278231426
+## # A tibble: 1 x 2
+##   STATEFP10 `mean(Drainage_A)`
+##   <chr>                  <dbl>
+## 1 42                     3584.
 \end{verbatim}
+
+\hypertarget{questions}{%
+\section{Questions}\label{questions}}
+
+\hypertarget{section-11}{%
+\subsection{}\label{section-11}}
 
 \end{document}
