@@ -152,23 +152,63 @@ task2.2 %>% ggplot(aes(x = Drainage_A, fill = stateName)) + #set drainage ares o
 task3.1 <- function(numVect){
   isVec <- is.vector(numVect) #test if it is vector
   isNum <- is.numeric(numVect) #test if list is all numeric
-  if(isVec == TRUE & isNum == TRUE) {
-    statList <- as.list(c(mean(numVect), median(numVect), max(numVect), min(numVect)))
-    print(statList)
-    vecMean <- mean(numVect)
-    vecMed <- median(numVect)
-    vecMax <- max(numVect)
-    vecMin <- min(numVect)
-   #print(vecMean)
+  if(isVec == TRUE & isNum == TRUE) { #check that tests are both TRUE
+    
+    statList <- list(mean(numVect), median(numVect), max(numVect), min(numVect)) #create list with stat values
+    print("Stats: mean, median, maximum, and minumum") #detail what will be printed
+    print(statList) #print list of stats
+    
+    sortVec <- sort(numVect) #sort vector from least to greatest
+    print("Values in vector sorted from least to greatest") #detail what will be printed
+    print(sortVec) #print sorted list
+    
   } else{
-    print("Troubleshooting errors:")
-    print("Vector:")
-    print(isVec)
+    print("Troubleshooting Errors") #provide information on why vector failed tests
+    print("Vector:") 
+    print(isVec) #provides details on whether input data was vector or not
     print("Numbers:")
-    print(isNum)
+    print(isNum) #provides detaisl on whether input data contained all numbers
   }
 }
 
-task3.1(c(1, 3, 4))
+#Test 1
+task3.1(c(1, 0, -1))
+
+#Test 2
+task3.1(c(10, 100, 1000))
+
+#Test 3
+task3.1(c(.1, .001, 1e8))
+
+#Test 4
+task3.1(c("a", "b", "c"))
 ```
 
+# Task 4: Spatial analysis
+
+### 4.1
+```{r 4.1}
+st_is_valid(d.counties) #was throwing an error so threw in to check
+d.counties2 <- st_make_valid(d.counties) #make data valid for work
+st_is_valid(d.counties2) #check success of make_valid
+
+st_is_valid(d.stations) #check stations while at it
+
+d.stations2 <- sf::st_intersection(d.counties2, d.stations) #intersect so stations get counties df info
+
+task4.1 <- d.stations2 %>% as_tibble() %>% #count number of features per STATEFP10
+  count(STATEFP10)
+
+task4.1
+```
+
+### 4.2
+```{r 4.2}
+# NY FIPS = 36
+task4.2 <- d.counties2 %>% filter(STATEFP10 == 36) %>% # select counties in NY
+  mutate(polyArea = st_area(geometry)) %>%  #calculate area of counties
+  as_tibble() %>% #convert to tibble
+  summarize(mean(polyArea)) #calculate mean
+
+task4.2
+```

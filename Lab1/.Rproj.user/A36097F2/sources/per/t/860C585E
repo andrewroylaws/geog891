@@ -3,7 +3,7 @@
     "path": "~/GitHub/geog891/Lab1/Lab1.Rmd",
     "project_path": "Lab1.Rmd",
     "type": "r_markdown",
-    "hash": "3133881740",
+    "hash": "1683476435",
     "contents": "",
     "dirty": false,
     "created": 1631641032124.0,
@@ -12,16 +12,16 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "last_setup_crc32": "5BB7838F214b8327",
+        "last_setup_crc32": "",
         "cursorPosition": "172,0",
-        "scrollLine": "151"
+        "scrollLine": "115"
     },
-    "folds": "25|25|28|0|\n29|31|35|0|\n38|30|44|0|\n47|39|56|0|\n57|40|69|0|\n",
-    "lastKnownWriteTime": 1631656503,
+    "folds": "",
+    "lastKnownWriteTime": 1631739280,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1631656503304,
+    "last_content_update": 1632319591360,
     "read_only": false,
     "read_only_alternatives": []
 }
