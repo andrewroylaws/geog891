@@ -1,0 +1,25 @@
+---
+title: "Lab2"
+author: "Andrew Laws"
+date: "9/29/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#libraries
+library(tidyverse)
+library(tmap)
+library(sf)
+
+#data
+counties <- sf::read_sf("../data/orig/County_Boundaries.shp") %>% sf::st_make_valid()
+
+dams <- sf::read_sf("../data/orig/Dam_or_Other_Blockage_Removed_2012_2017.shp") %>% sf::st_make_valid()
+
+streams <- sf::read_sf("../data/orig/Streams_Opened_by_Dam_Removal_2012_2017.shp") %>% sf::st_make_valid()
+
+bmps <- read_csv("../data/orig/BMPreport2016_landbmps.csv")
+```
+
