@@ -20,6 +20,52 @@ dams <- sf::read_sf("../data/orig/Dam_or_Other_Blockage_Removed_2012_2017.shp") 
 
 streams <- sf::read_sf("../data/orig/Streams_Opened_by_Dam_Removal_2012_2017.shp") %>% sf::st_make_valid()
 
-bmps <- read_csv("../data/orig/BMPreport2016_landbmps.csv")
+bmps <- read_csv("../data/orig/BMPreport2016_landbmps.csv", show_col_types = FALSE)
+```
+
+```{r ESDA, include=FALSE}
+glimpse(bmps)
+
+tmap_mode("view")
+tm_shape(counties) + tm_polygons(border.col = "green") +
+  tm_shape(dams) + tm_dots(col = "red") +
+  tm_shape(streams) + tm_lines(col = "blue")
+```
+
+
+# Task 1: Aspatial Operations
+
+### Task 1.1
+```{r 1.1}
+#group by state then summarize costs and drop any  na field values
+task1.1 <- bmps %>% group_by(StateAbbreviation) %>% 
+  summarize(stateCost = sum(Cost, na.rm = TRUE))
+
+task1.1
+```
+
+### Task 1.2
+```{r 1.2}
+#log transform skewed data
+bmps$logCost <- log(bmps$Cost)
+bmps$logTotalAmountCredited <- log(bmps$TotalAmountCredited)
+
+#filter dataset to rows where units are acres and plot log transformed data
+task1.2 <- bmps %>% filter(., Unit == "Acres") %>% 
+  ggplot(., aes(x=logCost, y=logTotalAmountCredited)) +
+  geom_point()
+  
+task1.2
+```
+
+### Task 1.3
+```{r 1.3}
+#see unique BMPs for cover crops to get idea of spelling
+uni.bmps <- c(unique(bmps$BMPShortName))
+uni.bmps
+
+task1.3 <- bmps %>% filter(., stringr::str_detect(BMPShortName, "cover"))
+  
+task1.3
 ```
 
