@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(tmap)
 library(sf)
+library(gridExtra)
 
 #data
 counties <- sf::read_sf("../data/orig/County_Boundaries.shp") %>% sf::st_make_valid()
@@ -30,6 +31,8 @@ tmap_mode("view")
 tm_shape(counties) + tm_polygons(border.col = "green") +
   tm_shape(dams) + tm_dots(col = "red") +
   tm_shape(streams) + tm_lines(col = "blue")
+
+glimpse(dams)
 ```
 
 
@@ -64,8 +67,60 @@ task1.2
 uni.bmps <- c(unique(bmps$BMPShortName))
 uni.bmps
 
-task1.3 <- bmps %>% filter(., stringr::str_detect(BMPShortName, "cover"))
+#filter BMPShortName to rows with cover in them, checked using uni.bmps
+task1.3 <- bmps %>% filter(., stringr::str_detect(BMPShortName, "cover")
+                           & TotalAmountCredited > 50 #remove skew from all 0's
+                           & TotalAmountCredited < 1000) %>% #makes boxplot more readable
+  ggplot(., aes(x=StateAbbreviation, y=TotalAmountCredited)) + #plot
+  geom_boxplot()
   
 task1.3
+```
+
+### Task 1.4
+
+```{r 1.4}
+#use filter to remove rows where where year is 0
+task1.4 <- dams %>% as_tibble() %>% #convert to tibble for swifter data handling
+  filter(., YEAR != 0) %>%  # filter not equal to 0
+  ggplot(., aes(x=YEAR, y=STATE)) + #plot
+  geom_point(aes(color = OWNER_CODE)) #color by owner code
+
+task1.4
+```
+
+### Task 1.5
+```{r 1.5}
+#sum length of streams per HUC4 code
+strm.len <- streams %>% as_tibble() %>% #convert to tibble
+  group_by(HUC4) %>% #goup by HUC4 code
+  summarise(., totLen_KM = sum(LengthKM)) %>%  #sum stream lengths
+  ggplot(., aes(x=HUC4, y=totLen_KM)) +
+  geom_col(aes(fill = HUC4))
+
+strm.len
+
+#count of dams per HUC4 code
+dam.count <- dams %>% as_tibble() %>% #convert to tibble
+  filter(., !is.na(HUC4)) %>% #drop HUC4 is NA
+  group_by(HUC4) %>% #group by HUC4 code
+  tally() %>%  #tally counts of HUC4
+  ggplot(., aes(x=HUC4, y=n)) +
+  geom_col(aes(fill = HUC4))
+
+dam.count
+
+strm.dam <- left_join(strm.len, dam.count, by = "HUC4") %>% 
+  filter(., !is.na(n))
+
+strm.dam
+ggplot(strm.dam, aes(totLen_KM, n)) +
+  geom_col() +
+  facet_grid(cols = HUC4)
+
+gridExtra::grid.arrange()
+
+
+
 ```
 
