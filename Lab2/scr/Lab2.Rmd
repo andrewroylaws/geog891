@@ -13,6 +13,8 @@ library(tidyverse)
 library(tmap)
 library(sf)
 library(gridExtra)
+library(stringr)
+library(scales)
 
 #data
 counties <- sf::read_sf("../data/orig/County_Boundaries.shp") %>% sf::st_make_valid()
@@ -139,13 +141,30 @@ task2.1
 
 ### Task 2.2
 ```{r 2.2}
-# intersect streams and counties, groupy by county, sum stream length and slice
+# intersect streams and counties, group by county, sum stream length and slice
 task2.2 <- sf::st_intersection(streams, counties) %>% 
   as_tibble() %>%  #convert to tibble for faster processing
-  group_by(COUNTYFP10) %>%  # group by county fips code
+  group_by(GEOID10) %>%  # group by county fips code
   summarise(totStrmLen = sum(LengthKM)) %>%  #calculate total stream length per county
-  slice_max(n=3, order_by = totStrmLen) 
+  slice_max(n=3, order_by = totStrmLen)  #slice highest three total stream length
 
 task2.2
+```
+
+### Task 2.3
+```{r 2.3}
+#create GEOID column in bmps from subset GeographyName
+bmps$GEOID = stringr::str_sub(bmps$GeographyName, 1, 5)
+
+#sum cost of bmps per geoid
+tot.cost <- bmps %>% filter(., Cost > 0) %>% #filter out values of 0
+  group_by(GEOID) %>% #GEOID to get a single value to join to counties later
+  summarise(., TotalBMPCosts = sum(Cost))
+
+#join tot.cost to counties on GEOID, drop counties with no BMP costs
+task2.3 <- left_join(counties, tot.cost, by = c("GEOID10"="GEOID")) %>% 
+  filter(., TotalBMPCosts > 0)
+
+tm_shape(task2.3) + tm_polygons(col = "TotalBMPCosts")
 ```
 
