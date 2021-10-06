@@ -93,12 +93,13 @@ task1.4
 ```{r 1.5}
 #sum length of streams per HUC4 code
 strm.len <- streams %>% as_tibble() %>% #convert to tibble
+  filter(., HUC4 != "0206") %>% #no 0206 dams and stream lenghts are minimal
   group_by(HUC4) %>% #goup by HUC4 code
   summarise(., totLen_KM = sum(LengthKM)) %>%  #sum stream lengths
   ggplot(., aes(x=HUC4, y=totLen_KM)) +
-  geom_col(aes(fill = HUC4))
-
-strm.len
+  geom_col(aes(fill = HUC4), show.legend = FALSE) + #don't show legend as legend from dam plot will suffice
+  labs(y= "Total Length of Streams (km)",
+       caption = "HUC4 code 0206 removed due to lack of dams in basin")
 
 #count of dams per HUC4 code
 dam.count <- dams %>% as_tibble() %>% #convert to tibble
@@ -106,21 +107,45 @@ dam.count <- dams %>% as_tibble() %>% #convert to tibble
   group_by(HUC4) %>% #group by HUC4 code
   tally() %>%  #tally counts of HUC4
   ggplot(., aes(x=HUC4, y=n)) +
-  geom_col(aes(fill = HUC4))
+  geom_col(aes(fill = HUC4)) +
+  labs(y= "Dam Quantity",
+       caption = "No dams recorded in HUC4 0206")
 
-dam.count
+#plot both plots in grid
+task1.5 <- gridExtra::grid.arrange(strm.len, dam.count, nrow=1, top = "Correlation between stream length released and number of removed dams")
 
-strm.dam <- left_join(strm.len, dam.count, by = "HUC4") %>% 
-  filter(., !is.na(n))
+task1.5
+```
 
-strm.dam
-ggplot(strm.dam, aes(totLen_KM, n)) +
-  geom_col() +
-  facet_grid(cols = HUC4)
+# Task 2: Spatial Operations
 
-gridExtra::grid.arrange()
+### Task 2.1
+```{r 2.1}
+###assume lines have no lengths to make spatial
+#check crs of streams to see unit length
+st_crs(streams) #length units =  meters
 
+#calculate length of each line in km
+streams$len_KM <- as.vector(sf::st_length(streams) / 1000) #1000 m per km
 
+#filter out NA, then sum stream lengths
+task2.1 <- streams %>% filter(., !is.na(GNIS_Name)) %>%  #remove NA since we don't know what stream they are from
+  group_by(GNIS_Name) %>% #Group by stream name
+  summarise(totStreamLen_KM = sum(len_KM)) %>% #sum length per stream
+  slice_max(n=5, order_by = totStreamLen_KM) #slice 5 longest streams
+  
+task2.1
+```
 
+### Task 2.2
+```{r 2.2}
+# intersect streams and counties, groupy by county, sum stream length and slice
+task2.2 <- sf::st_intersection(streams, counties) %>% 
+  as_tibble() %>%  #convert to tibble for faster processing
+  group_by(COUNTYFP10) %>%  # group by county fips code
+  summarise(totStrmLen = sum(LengthKM)) %>%  #calculate total stream length per county
+  slice_max(n=3, order_by = totStrmLen) 
+
+task2.2
 ```
 
