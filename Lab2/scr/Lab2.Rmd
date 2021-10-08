@@ -168,3 +168,17 @@ task2.3 <- left_join(counties, tot.cost, by = c("GEOID10"="GEOID")) %>%
 tm_shape(task2.3) + tm_polygons(col = "TotalBMPCosts")
 ```
 
+### Task 2.4    
+```{r 2.4}
+#use use spatial join with nearest feature predicate
+task2.4 <- st_join(dams, streams, st_nearest_feature) %>% 
+  select(., c("DAM_NAME.x", "GNIS_Name", "ComID")) #pare dataset down
+
+task2.4
+```
+
+### Task 2.5
+```{r 2.5}
+
+```
+
