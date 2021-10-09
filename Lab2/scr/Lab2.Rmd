@@ -179,6 +179,12 @@ task2.4
 
 ### Task 2.5
 ```{r 2.5}
-
+# intersect dams and counties, group by state, and then tally
+task2.5 <- st_intersection(dams, counties) %>% 
+  as_tibble() %>% #convert to tibble for faster processing
+  group_by(STATEFP10) %>% 
+  tally(name = "removed.dams")
+  
+task2.5
 ```
 
