@@ -1,0 +1,70 @@
+---
+title: "TeachingWithMarkdwon"
+author: "Andrew Laws"
+date: "10/12/2021"
+output: html_document
+---
+
+### This setup section is where libraries and data are loaded in 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#libraries
+library(sf)
+library(terra)
+library(dplyr)
+library(spData)
+library(tmap)
+
+#data
+data(seine)
+```
+
+Learning Objectives:
+
+1. When would you use simplification? Think about what it changes in the data and
+   how this would impact maps and analysis.
+   
+2. What is maintained and what is not maintained during an affine transformation?
+
+   
+##Simplification##
+
+- Generalizes vector objects (lines and polygons) by reducing vertexes
+- Reduces disk space and speeds up map making
+- Used for smaller scales only
+
+Example:
+```{r Simplification - Visual}
+#View original data
+orig <- tm_shape(seine) + tm_lines(col = "black") + tm_layout(title = "Original")
+orig
+
+#simplify the gometry
+seine_simp = st_simplify(seine, dTolerance = 2000)  # 2000 m
+
+#view new data next to original data
+simplify <- tm_shape(seine) + tm_lines(col = "black") + tm_layout(title = "Simplified")
+
+tmap_arrange(orig, simplify, ncol = 2)
+
+#see next chunk for size comparison
+```
+The geometry has changed some but can you tell how much the data has been simplified? Run the next code chunk to see the disk space reduction
+
+```{r Simplification - Disk Space}
+#original disk size
+orig.disk <- object.size(seine)
+
+print("Original disk size")
+print(orig.disk)
+
+#simplified disk size
+simp.disk <- object.size(seine_simp)
+
+print("Simplified disk size")
+print(simp.disk)
+
+print("That's a reduction of half the size!")
+```
+
