@@ -68,3 +68,16 @@ print(simp.disk)
 print("That's a reduction of half the size!")
 ```
 
+We have a geometry, nz_sfc, that needs to be shifted 3000 meters North and 5000 meters West. How would you type out the vector to perform this shift?
+```{r}
+#use nz_sfc with a vector to shift
+nz_sfc = st_geometry(nz)
+
+#uncomment code below and create shift
+nz_shift <- nz_sfc + c(1000000, -5000)
+
+#uncomment code below to map shift
+tm_shape(nz_sfc) + tm_polygons(col = "gray") +
+ tm_shape(nz_shift) + tm_borders(col = "red") 
+```
+
