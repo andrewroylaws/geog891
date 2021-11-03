@@ -11,8 +11,10 @@ knitr::opts_chunk$set(echo = TRUE)
 # libraries
 library(spdep)
 library(tmap)
+library(tmaptools)
 library(sf)
 library(tidyverse)
+library(rgeoda)
 
 # data
 aoi <- sf::read_sf("../data/orig/aoi.shp") %>% sf::st_make_valid() %>% 
@@ -38,7 +40,7 @@ aoi <- sf::read_sf("../data/orig/aoi.shp") %>% sf::st_make_valid() %>%
 ## Task 2
 ```{r task2}
 #percentage of households that are single parent
-aoi <- aoi %>% mutate(., oneparent = ((DP0130007 + DP0130009)/ DP0130001)) #single male and female parents
+aoi <- aoi %>% mutate(., oneparent = ((DP0130007 + DP0130009)/ DP0130001) * 100) #single male and female parents
                                                                            # over total households
 ```
 
@@ -50,7 +52,84 @@ hist(aoi$oneparent)
 
 ## Task 4
 ```{r task4}
-# make a chlorpleth map
-tm_shape(aoi) + tm_polygons(col = "oneparent")
+#create bbox to zoom out map
+bbox <- st_bbox(aoi)
+
+#get range of values
+xrange <- bbox$xmax - bbox$xmin
+yrange <- bbox$ymax - bbox$ymin 
+
+#alter corner poitns
+bbox[1] <- bbox[1] - (0.25 * xrange) # xmin - left
+bbox[3] <- bbox[3] + (0.25 * xrange) # xmax - right
+bbox[2] <- bbox[2] - (0.25 * yrange) # ymin - bottom
+bbox[4] <- bbox[4] + (0.25 * yrange) # ymax - top
+
+# make a choropleth map
+tm_shape(aoi, bbox = bbox) + tm_polygons(col = "oneparent", palette = "-RdBu", n=6, style="jenks", title = "Legend", title.size = 0.5) +
+  tm_layout(title = "% of Households Classified as Single Parent", title.size = 2)
+
+```
+## Task 5
+```{r task5}
+#row standardized queen contiguity weights matrix
+qn.lw <- poly2nb(aoi, queen = TRUE) %>% nb2listw(., style = "W")
+
+# histogram of neighbors
+qn.nbr <- attr(qn.lw$weights, "comp")$d
+hist(qn.nbr)
+
+#calculate average number of neighbors
+mean_qn.nbr <- qn.nbr %>% as_tibble() %>% 
+  summarize(., mean.nbr = mean(value))
+
+print(mean_qn.nbr$mean.nbr)
+
+#create moran plot
+qn.moran_plot <- moran.plot(aoi$oneparent, qn.lw)
 ```
 
+## Task 6
+```{r task6}
+#convert aoi to poinst
+aoi.cent <- st_centroid(aoi)
+
+#get minimum distance between points
+thresh <- rgeoda::min_distthreshold(aoi.cent)
+
+#row standardized IDW weights matrix
+idw.lw <- dnearneigh(aoi.cent, 0, thresh * 1.25, longlat=FALSE) %>% nb2listwdist(., aoi.cent, type = "idw", style = "W")
+
+# histogram of neighbors
+idw.nbr <- attr(idw.lw$weights, "comp")$d
+hist(idw.nbr)
+
+#calculate average number of neighbors
+mean_idw.nbr <- idw.nbr %>% as_tibble() %>% 
+  summarize(., mean.nbr = mean(value))
+
+print(mean_idw.nbr$mean.nbr)
+
+#create moran plot
+idw.moran_plot <- moran.plot(aoi.cent$oneparent, idw.lw)
+```
+
+## Questions
+Questions:
+1. Describe in your own words how Moran’s I is calculated
+
+Moran's I is calculated by summing the spatially weighted means for all features and dividing by the total spatial weights.
+
+2. Describe in your own words: what is a spatially-lagged variable?
+
+A spatially-lagged variable is the mean weighted value of a features neighbors and when combined with the features values allow identification of clustering and outlier identification.
+
+3. How does your analysis in this lab (as simple as it is) differ by how you have formalized W (e.g., space,
+neighbors) in two different methods? How might it affect analysis?
+
+The contiguity based analysis relies on polygons that have lines that touch to be considered neighbors whereas the IDW method uses distance and centroids, which could create additional neighbors for geometries that don't share common borders. As the weights are row standardized, these additional neighbors could weaken the weight of neighbors present in the contiguity-based weights. 
+
+4. What does it mean if an observation falls in the “H-L” quadrant? Why might it be useful to detect
+such occurrences?
+
+This means that the features value is higher than average and is surrounded features with values that are lower than average. Simply put, its a high value surrounded by much lower values and could be considered a spatial outlier.
