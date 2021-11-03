@@ -1,0 +1,56 @@
+---
+title: "Lab3"
+author: "Andrew Laws"
+date: "11/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# libraries
+library(spdep)
+library(tmap)
+library(sf)
+library(tidyverse)
+
+# data
+aoi <- sf::read_sf("../data/orig/aoi.shp") %>% sf::st_make_valid() %>% 
+  sf::st_transform(., "ESRI:102010") #set projection
+
+```
+
+## Task 1
+```{r task1, include=FALSE}
+# us <- sf::read_sf("../data/orig/County_2010Census_DP1.shp") %>% sf::st_make_valid()
+# 
+# # subset data to 4 corn statses
+# subset <- us %>% filter(., stringr::str_starts(GEOID10, "04") | stringr::str_starts(GEOID10, "08") 
+#                      | stringr::str_starts(GEOID10, "49")| stringr::str_starts(GEOID10, "35")) 
+#   
+# #write to shapefile
+# st_write(subset, "../data/orig/aoi.shp", driver="ESRI Shapefile")
+# 
+# #visualize
+# tm_shape(subset) + tm_polygons()
+```
+
+## Task 2
+```{r task2}
+#percentage of households that are single parent
+aoi <- aoi %>% mutate(., oneparent = ((DP0130007 + DP0130009)/ DP0130001)) #single male and female parents
+                                                                           # over total households
+```
+
+## Task 3
+```{r task3}
+#histogram of variable
+hist(aoi$oneparent)
+```
+
+## Task 4
+```{r task4}
+# make a chlorpleth map
+tm_shape(aoi) + tm_polygons(col = "oneparent")
+```
+
