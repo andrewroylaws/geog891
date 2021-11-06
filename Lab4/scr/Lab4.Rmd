@@ -1,0 +1,74 @@
+---
+title: "Lab4"
+author: "Andrew Laws"
+date: "11/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+## libraries
+library(spdep)
+library(tidyverse)
+library(tmap)
+library(sf)
+library(raster)
+
+## data
+
+#crs
+crs <- st_crs("ESRI:102008")
+
+#state scale
+counties <- sf::read_sf("../data/County_Boundaries-_Census.shp") %>% st_make_valid() %>% 
+  st_transform(., crs=crs)
+
+state <- sf::read_sf("../data/Nebraska_State_Boundary.shp") %>% st_make_valid() %>% 
+  st_transform(., crs=crs)
+
+stparks <- sf::read_sf("../data/State_Park_Locations.shp") %>% st_make_valid() %>% 
+  st_transform(., crs=crs)
+
+streams <- sf::read_sf("../data/Streams_303_d_.shp") %>% st_make_valid() %>% 
+  st_transform(., crs=crs)
+
+#county scale
+lanc <- sf::read_sf("../data/lancaster_county.shp") %>% st_make_valid() %>% 
+  st_transform(., crs=crs)
+
+dem <- raster::raster("../data/lancaster_dem/lc_dem.tif")
+
+muni <- sf::read_sf("../data/Municipal_Boundaries.shp") %>% st_make_valid() %>% 
+  st_transform(., crs=crs)
+```
+
+```{r state map}
+#non family household percentages
+counties <- mutate(counties, nfh.perc = NonFamHous/TotalHouse * 100)
+
+st.map <- tm_shape(counties) + tm_polygons(col = "nfh.perc", n=5, style="jenks",
+                                           title="Percent", palette="PuBu",
+                                           border.col = "yellow") +
+  tm_scale_bar(width = 0.1, position = c("right", "top"))
+st.map
+```
+
+```{r county map}
+#subset parks, streams, and muni to lanc
+l.parks <- st_intersection(stparks, lanc)
+
+l.streams <- st_intersection(streams, lanc)
+
+l.muni <- st_intersection(muni, lanc)
+
+#create map
+
+tm_shape(lanc) + tm_borders() + tm_shape(dem) + tm_raster(legend.show = FALSE, style= "quantile", n=7, palette=get_brewer_pal("Greys", n = 7, plot=FALSE)) +
+  tm_shape(lanc) + tm_polygons(col = "white", alpha = 0.4) +
+  tm_shape(l.muni) + tm_polygons() + tm_text("NAME", size = 0.9, col = "blue") +
+  tm_shape(l.parks) + tm_dots(col = "red", size = 1.3, shape = 25) +
+  tm_shape(l.streams) + tm_lines(col = "Impairment")
+#still need state map inset, north arrow, and title
+```
+
