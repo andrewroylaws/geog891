@@ -14,6 +14,8 @@ library(tidyverse)
 library(tmap)
 library(sf)
 library(raster)
+library(grid)
+library(httr)
 
 ## data
 
@@ -41,6 +43,35 @@ dem <- raster::raster("../data/lancaster_dem/lc_dem.tif")
 
 muni <- sf::read_sf("../data/Municipal_Boundaries.shp") %>% st_make_valid() %>% 
   st_transform(., crs=crs)
+
+#second map data
+
+lnk <- filter(muni, NAME == "Lincoln")
+
+#get census tract data from ESRI Living Atlas
+url <- parse_url("https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services")
+url$path <- paste(url$path, "ACS_Poverty_by_Age_Boundaries/FeatureServer/2/query", sep = "/")
+url$query <- list(where = "State = 'Nebraska'",
+                  outFields = "*",                  
+                  returnGeometry = "true",                  
+                  f = "json")
+request <- build_url(url)
+
+tracts <- st_read(request) %>% dplyr::select(., GEOID: B17020_001E | B17020_002E | geometry) %>% 
+  mutate(., pov.perc = B17020_002E/B17020_001E * 100) %>%
+  st_transform(., crs=crs)
+
+lnk.tracts <- tracts[lnk,] #intersects with Lancaster county to narrow dataset
+
+#lnk park boundares
+lnk.parks <- st_read("https://opendata.arcgis.com/datasets/d325c636525642f2b98bbebd37e22201_0.geojson") %>% #data from Lincoln OpenData
+  st_transform(., crs=crs)
+
+#lakes data and subset to Lancaster
+lakes <- st_read("https://opendata.arcgis.com/datasets/ed78e82b2727468f91cb3bc1f49f0042_2.geojson") %>% #data from NE OpenData
+  st_transform(., crs=crs)
+
+lnk.lakes <- lakes[lnk,] # intersects with Lancaster county
 ```
 
 ```{r state map}
@@ -49,8 +80,9 @@ counties <- mutate(counties, nfh.perc = NonFamHous/TotalHouse * 100)
 
 st.map <- tm_shape(counties) + tm_polygons(col = "nfh.perc", n=5, style="jenks",
                                            title="Percent", palette="PuBu",
-                                           border.col = "yellow") +
-  tm_scale_bar(width = 0.1, position = c("right", "top"))
+                                           border.col = "yellow", legend.show = FALSE) +
+  tm_scale_bar(width = 0.1, position = c("right", "top")) +
+  tm_shape(lanc) + tm_borders(col = "red")
 st.map
 ```
 
@@ -63,12 +95,45 @@ l.streams <- st_intersection(streams, lanc)
 l.muni <- st_intersection(muni, lanc)
 
 #create map
-
-tm_shape(lanc) + tm_borders() + tm_shape(dem) + tm_raster(legend.show = FALSE, style= "quantile", n=7, palette=get_brewer_pal("Greys", n = 7, plot=FALSE)) +
+county.map <- tm_shape(lanc) + tm_borders() + 
+  tm_shape(dem, raster.downsample=FALSE) + tm_raster(style= "quantile", n=7, palette="Greys") +
   tm_shape(lanc) + tm_polygons(col = "white", alpha = 0.4) +
   tm_shape(l.muni) + tm_polygons() + tm_text("NAME", size = 0.9, col = "blue") +
-  tm_shape(l.parks) + tm_dots(col = "red", size = 1.3, shape = 25) +
-  tm_shape(l.streams) + tm_lines(col = "Impairment")
-#still need state map inset, north arrow, and title
+  tm_shape(l.parks) + tm_dots(col = "red", size = 1.1, shape = 10) +
+  tm_shape(l.streams) + tm_lines(col = "Impairment") +
+  tm_compass(position = c("right", "bottom")) +
+  tm_layout(legend.show = FALSE, title = "Lancaster County Phenomena", title.position = c("left", "top"), 
+            title.color = "black", title.bg.color = "white", title.bg.alpha = 0.8)
+county.map
 ```
 
+```{r combine maps}
+#combine maps
+county.map
+print(st.map, vp=viewport(0.605, 0.85, width = 0.2, height = 0.11))
+```
+
+```{r custom map}
+tm_shape(lnk) + tm_borders(col = "white") +
+  tm_shape(dem) + tm_raster(style= "quantile", n=7, palette="Greys", legend.show = FALSE) + 
+  tm_shape(lnk.tracts) + tm_polygons(col = "pov.perc", border.col = "gray", title = "% in Poverty", alpha = 0.9) +
+  tm_shape(streams) + tm_lines(col = "blue") +
+  tm_shape(lanc.lakes) + tm_polygons(col = "blue", legend.show = TRUE) + 
+  tm_shape(lnk.parks) + tm_polygons(col = "#098908") +
+  tm_compass(position = c("right", "bottom")) +
+  tm_scale_bar(width = 0.1, position = c("left", "bottom")) +
+  tm_layout(title = "Poverty and Nature Access", 
+            title.color = "black", title.bg.color = "white", title.bg.alpha = 0.8,
+            legend.bg.color = "white", legend.bg.alpha = 0.8)
+
+```
+
+## Questions
+# 1. Describe your choices in making map 1
+I chose gray for the DEM as this is a commonly used color for this. I then chose red targets for park locations since those could be hunting locations. I put the inset map in a location where it wasn't blocking the other features of interest.
+
+# 2. Describe your choices in making map 2
+I chose to highlight, at a broad level, poverty and acces to nature around link. I brought in ACS 2019 data with poverty measurements from the ESRI Living Atlas, lakes data from NebraskaMaps.gov, and Lincoln parks from the Lincoln OpenData site, all using web sources. I calculated the % poverty from the ACS data and then plotted the census tracts. I was trying to visualize that higher poverty rates often accompany less access to nature. 
+
+# 3. What did you learn?
+I still prefer making maps using a GUI interface. A map requiring and inset is better on a landscape mode map with text filling the whitespace and this is really not feasible to do with tmap or R. Accessing open data was pretty easy programmitcally. 
