@@ -118,7 +118,7 @@ tm_shape(lnk) + tm_borders(col = "white") +
   tm_shape(dem) + tm_raster(style= "quantile", n=7, palette="Greys", legend.show = FALSE) + 
   tm_shape(lnk.tracts) + tm_polygons(col = "pov.perc", border.col = "gray", title = "% in Poverty", alpha = 0.9) +
   tm_shape(streams) + tm_lines(col = "blue") +
-  tm_shape(lanc.lakes) + tm_polygons(col = "blue", legend.show = TRUE) + 
+  tm_shape(lnk.lakes) + tm_polygons(col = "blue", legend.show = TRUE) + 
   tm_shape(lnk.parks) + tm_polygons(col = "#098908") +
   tm_compass(position = c("right", "bottom")) +
   tm_scale_bar(width = 0.1, position = c("left", "bottom")) +
