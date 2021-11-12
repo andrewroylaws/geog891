@@ -1,0 +1,97 @@
+---
+title: "Lab5"
+author: "Andrew Laws"
+date: "11/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(sf)
+library(tmap)
+library(leaflet)
+library(spdep)
+
+# data
+counties <- sf::read_sf("../data/CBW/County_Boundaries.shp") %>% sf::st_make_valid()
+
+bmps <- read_csv("../data/CBW/BMPreport2016_landbmps.csv", show_col_types = FALSE)
+
+aoi <- sf::read_sf("../data/aoi.shp") %>% sf::st_make_valid() %>% 
+  sf::st_transform(., "ESRI:102010") #set projection
+```
+
+## Task 1
+```{r task1}
+#create GEOID column in bmps from subset GeographyName
+bmps$GEOID = stringr::str_sub(bmps$GeographyName, 1, 5)
+
+#sum cost of bmps per geoid
+tot.cost <- bmps %>% filter(., Cost > 0) %>% #filter out values of 0
+  group_by(GEOID) %>% #GEOID to get a single value to join to counties later
+  summarise(., TotalBMPCosts = as.numeric(format(round(sum(Cost),2), nsmall=2))) #trims costs to 2 decimal places to match currency
+
+#join tot.cost to counties on GEOID, drop counties with no BMP costs
+bmp.sf <- left_join(counties, tot.cost, by = c("GEOID10"="GEOID")) %>% 
+  filter(., TotalBMPCosts > 0)
+
+#create bins and palette
+maxB  <- max(bmp.sf$TotalBMPCosts) + 1
+bins <- c(0, 0.2*maxB, 0.4*maxB, 0.6*maxB, 0.8*maxB,maxB) 
+pal <- colorBin("BuPu", domain = bmp.sf$TotalBMPCosts, bins=bins)
+
+task1 <- leaflet(bmp.sf) %>% 
+  addTiles() %>% 
+  addPolygons(fillColor = ~pal(TotalBMPCosts),
+              weight = 2,
+              opacity = 1,
+              color = "blue",
+              fillOpacity = 1,
+              label = paste0("$", bmp.sf$TotalBMPCosts)) %>% 
+  addLegend(pal = pal,
+            values = ~TotalBMPCosts,
+            title = "Total BMP Costs", 
+            position = "bottomright")
+
+task1
+```
+
+## Task 2
+```{r task2}
+#percentage of households that are single parent
+aoi <- aoi %>% mutate(., oneparent = ((DP0130007 + DP0130009)/ DP0130001) * 100) #single male and female parents
+                                                                           # over total households
+#spatial weights matrix
+aoi.lw <- poly2nb(aoi, queen = TRUE) %>% nb2listw(., style = "W")
+
+#calculate LISA
+aoi$LI <- localmoran(aoi$oneparent, aoi.lw)[, 1]
+aoi$pval <- localmoran(aoi$oneparent, aoi.lw)[, 5]
+
+#bins and palette
+max2 = max(aoi$LI) + 0.1
+min2 = min(aoi$LI) - 0.1
+dff2 = max2 - min2
+bins2 <- c(min2, max2-(0.75*dff2), max2-(0.5*dff2), max2-(0.25*dff2), max2)
+pal2 <- colorBin("Reds", domain = aoi$LI, bins=bins2)
+
+#make map
+task2 <- leaflet(aoi) %>% 
+  addProviderTiles(providers$Esri.WorldGrayCanvas) %>% 
+  addPolygons(fillColor = ~pal2(LI),
+              weight = 1,
+              opacity = 1,
+              color = "white",
+              fillOpacity = 0.9, 
+              label = paste0("p-value: ", aoi$pval)) %>% 
+  addLegend(pal = pal2,
+            values = ~LI,
+            title = "LISA", 
+            position = "bottomright")
+  
+task2
+
+tm_shape(aoi) + tm_polygons(col = "LI")
+```
+
