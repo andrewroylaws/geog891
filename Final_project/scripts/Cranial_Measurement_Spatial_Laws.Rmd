@@ -165,7 +165,45 @@ cran.lw <- dnearneigh(st_centroid(cran.sf), d1 = 0, d2 = 1.25 * thresh) %>%  #1.
   nb2listw(., style = "W")
 
 all.moran <- function(x) {
-  result <- moran.test(x, cran.lw) #run moran test on column
+  result <- moran.test(x, cran.lw, na.action = na.omit, zero.policy = TRUE) #run moran test on column
+  stat.name <-  deparse(substitute(x)) #convert column name to string
+  stat <- substr(stat.name, 9, 17) #extract stat name from full column name
+  df <- data.frame("stat"=x,
+                   "moran" = as.numeric(result$estimate[1]), 
+                   "pval"=as.numeric(result[2]))
+  return(df)
+}
+
+# trying to drop geometry, as cran.sf$GOL_mean =/= cran.sf["GOL_mean"]
+# the latter keeps the geometry
+cran.df <- st_drop_geometry(cran.sf)
+cran.df[3:36]
+#error message
+moran.stats <- purrr::map_dfr(cran.df[3:36], .f = all.moran, .id = "variable")
+
+moran.stats
+```
+
+```{r}
+##### SDB's comments ####
+# trying to drop geometry, as cran.sf$GOL_mean =/= cran.sf["GOL_mean"]
+# the latter keeps the geometry
+cran.df <- st_drop_geometry(cran.sf)
+
+# trying again with purrr::map
+moran.stats <- purrr::map_dfr(cran.df[3:36], .f = all.moran)
+
+# the error now seems the same but is different, as 
+purrr::map_dfr(cran.sf[4], .f = all.moran) # trows error
+purrr::map_dfr(cran.df[3], .f = all.moran) # works
+# they refer to the same column (GOL_mean)
+
+# what seems to be missing is an explicit way to remove NAs in the
+# moran function call
+
+# editing all.moran function
+all.moran_edit <- function(x) {
+  result <- moran.test(x, cran.lw, na.action = na.omit) #run moran test on column
   stat.name <-  deparse(substitute(x)) #convert column name to string
   stat <- substr(stat.name, 9, 17) #extract stat name from full column name
   df <- data.frame("stat"=stat,
@@ -174,13 +212,46 @@ all.moran <- function(x) {
   return(df)
 }
 
-#test all.moran - IT WORKS
-moran.test <- all.moran(cran.sf$GOL_mean)
-moran.test
+# testing all columns
+moran.stats <- purrr::map_dfr(cran.df[3:36], .f = all.moran_edit)
+# new error message =  progress! :)
 
-#error message
-moran.stats <- purrr::map_dfr(cran.sf[4:37], .f = all.moran)
+# checking which column(s) throw an error
+# install.packages("testit")
+test_errors <- tibble("i" = 3:36) %>% 
+  mutate(has_error = purrr::map_lgl(i, function(i){
+    testit::has_error(purrr::map_dfr(cran.df[i], .f = all.moran_edit),
+                      silent = TRUE)
+  })) %>% 
+  filter(has_error)
+# checking which columns produce errors
+test_errors
 
-#error message
-moran.stats <- lapply(X=cran.sf[,6], MARGIN = 2, FUN = all.moran)
+# here the culprits
+moran.stats <- purrr::map_dfr(cran.df[15], .f = all.moran_edit)
+moran.stats <- purrr::map_dfr(cran.df[16], .f = all.moran_edit)
+
+# seems like the error might be related to the moran test,
+# I am not familiar with it. From a quick search it might be fixed by this,
+# but I would check into this
+# source: https://community.rstudio.com/t/error-in-nb2listw-w-nb-style-w-empty-neighbour-sets-found/96922
+
+# re-editing funciton to fix zero.policy issue (might have to do with islands)
+all.moran_edit2 <- function(x) {
+  result <- moran.test(x, cran.lw, na.action = na.omit, zero.policy = TRUE) #run moran test on column
+  stat.name <-  deparse(substitute(x)) #convert column name to string
+  stat <- substr(stat.name, 9, 17) #extract stat name from full column name
+  df <- data.frame("stat"=stat,
+                   "moran" = as.numeric(result$estimate[1]), 
+                   "pval"=as.numeric(result[2]))
+  return(df)
+}
+
+# testing function with zero.policy = TRUE
+moran.stats <- purrr::map_dfr(cran.df[3:36], .f = all.moran_edit2)
+
+# seems to work, but I would look into it :)
+
+#### END ####
 ```
+
