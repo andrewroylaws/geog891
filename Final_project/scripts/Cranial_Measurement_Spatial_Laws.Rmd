@@ -1,0 +1,186 @@
+---
+title: "Cranial_Measurements_Spatial"
+author: "Andrew Laws"
+date: "9/27/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#libraries
+library(sf)
+library(tmap)
+library(tidyverse)
+library(readxl)
+library(spdep)
+library(rgeoda)
+library(stringr)
+
+# crs info
+# South Asia Albers Equal Area Conic ESRI: 102028
+
+#India state boundaries
+states <- sf::read_sf("../data/orig/india_states_2020.shp") %>% sf::st_make_valid() %>% 
+  st_transform(., "ESRI:102028")
+
+ # sri lanka boundary
+srla <- sf::read_sf("../data/orig/gadm36_LKA_0.shp") %>% sf::st_make_valid() %>%
+  st_transform(., "ESRI:102028") %>% mutate(., NAME = "Sri Lanka", ISO_CODE = "LKA")
+
+#full geometry
+aoi <- bind_rows(states, srla) %>%  #rbind would not work due to different column names
+  dplyr::select(., c(NAME, ISO_CODE, geometry)) %>%  #clean up tabular data to needed columns
+  filter(., ISO_CODE != "INAN") #INAN removed (15 obs) due to physical distance from other polygons impacting analysis
+
+#cranium data
+cran <- read_excel("../data/orig/India_Craniometric_Database_All_Data_4_Sept_2013.xlsx", sheet="rdata") %>% 
+  dplyr::select(., IndiaState:ISOCODE | Sex:ASB | FOL:ZYB | UFHT:MAB) %>%  #clean up data columns
+  filter(., ISOCODE != "INAN") #INAN removed (15 obs) due to physical distance from other polygons impacting analysis
+
+# bring in sri lanka geometry from AGOL feature service
+# library(httr)
+# url <- parse_url("https://gisapps.nsdi.gov.lk/server/rest/services")
+# url$path <- paste(url$path, "SLNSDI/Boundary/MapServer/7/query", sep = "/")
+# url$query <- list(where = "*",
+#                   outFields = "*",  
+#                   returnGeometry = "true",      
+#                   f = "geojson")
+# request <- build_url(url)
+# 
+# srilanka <- st_read(request)
+```
+
+
+```{r EsDA}
+# visualize geos
+tm_shape(aoi) + tm_polygons(col = "tan")
+
+#cranium factor histograms of factors with values
+cran.factors <- dplyr::select(cran, GOL:ASB | FOL:ZYB | UFHT:MAB)
+
+ggplot(gather(cran.factors), aes(value)) + 
+    geom_histogram(bins = 10) + 
+    facet_wrap(~key, scales = 'free_x')
+
+#get counts of sexes
+sexes.count <- cran %>% group_by(Sex) %>% tally()
+sexes.count
+
+# counts of observations by ISOCODE
+state.count <- cran %>% group_by(ISOCODE) %>% tally()
+state.count
+```
+
+
+```{r gol ESDA}
+#find gol averages and mean by ISOCODE8
+gol.stats <- cran %>% select(ISOCODE, GOL) %>% 
+  group_by(ISOCODE) %>% 
+  summarise(., GOL.mean = mean(GOL), GOL.median = median(GOL))
+
+#join gol.stats to spatial
+gol.sf <- inner_join(aoi, gol.stats, by = c("ISO_CODE" = "ISOCODE")) %>% 
+  filter(., ISO_CODE != "INAN") #INAN removed (15 obs) due to physical distance from other polygons
+
+#visualize states that have data
+tm_shape(aoi) + tm_polygons(col = "#b9d7f0") + tm_shape(gol.sf) + tm_polygons(col = "red") +
+  tm_layout(title = "Study Area (red)")
+
+# # use knn to make up for sri lanka
+# gol.nn <- knn2nb(knearneigh(st_centroid(gol.sf), k = 2)) #used 3 neighbors as it showed lowest p-value
+# 
+# # get list of weights that are row standardized
+# gol.lw <- nb2listw(gol.nn, style = "W")
+# 
+# #moran tests with KNN
+# m1 <- moran.test(gol.sf$GOL.mean, gol.lw)
+# m2 <- moran.test(gol.sf$GOL.mean, gol.lw)
+# moran.test(gol.sf2$GOL.median, gol.lw)
+
+# distance weights
+gol.thresh <- min_distthreshold(gol.sf)
+
+gol.dnn <- dnearneigh(st_centroid(gol.sf), d1 = 0, d2 = 1.25 * gol.thresh) #1.25 showed lowest p-values
+
+gol.lw <- nb2listw(gol.dnn, style = "W")
+
+m1 <- moran.test(gol.sf$GOL.mean, gol.lw)
+moran.test(gol.sf$GOL.median, gol.lw)
+
+#visualize distance weights
+gol.buff <- st_buffer(st_centroid(gol.sf), dist = gol.thresh)
+
+tm_shape(gol.buff) + tm_borders(col = "red") + tm_shape(gol.sf) + tm_polygons()
+
+#local moran
+gol.sf$li <- localmoran(gol.sf$GOL.mean, gol.lw)[, 1]
+
+tm_shape(gol.sf) +
+  tm_polygons(col = "li")
+```
+
+```{r xcb ESDA}
+#find xcb averages and mean by ISOCODE8
+xcb.stats <- cran %>% select(ISOCODE, XCB) %>% 
+  group_by(ISOCODE) %>% 
+  summarise(., XCB.mean = mean(XCB), XCB.median = median(XCB))
+
+#join xcb.stats to spatial
+xcb.sf <- inner_join(aoi, xcb.stats, by = c("ISO_CODE" = "ISOCODE")) %>% 
+  filter(., ISO_CODE != "INAN") #INAN removed (15 obs) due to physical distance from other polygons
+
+# distance weights
+xcb.thresh <- min_distthreshold(xcb.sf)
+
+xcb.dnn <- dnearneigh(st_centroid(xcb.sf), d1 = 0, d2 = 1.25 * xcb.thresh) #1.25 showed lowest p-values
+
+xcb.lw <- nb2listwdist(xcb.dnn, st_centroid(xcb.sf), type = "idw", style = "W")
+
+m1 <- moran.test(xcb.sf$XCB.mean, xcb.lw)
+m2 <- moran.test(xcb.sf$XCB.mean, xcb.lw)
+moran.test(xcb.sf$XCB.median, xcb.lw)
+
+#local moran
+xcb.sf$li <- localmoran(xcb.sf$XCB.mean, xcb.lw)[, 1]
+
+tm_shape(xcb.sf) +
+  tm_polygons(col = "li")
+```
+
+```{r summarize_all}
+# summarize all by mean and median
+cran.stats <- cran %>% select(., -c(IndiaState, Sex)) %>% 
+  group_by(ISOCODE) %>%
+  summarise(across(everything(), list(mean=mean, medn=median)))
+
+# join tabluar and spatial data
+cran.sf <- inner_join(aoi, cran.stats, by = c("ISO_CODE" = "ISOCODE"))
+
+#calculate min threshold for distance bands
+thresh <- rgeoda::min_distthreshold(cran.sf)
+
+#calculate distance weights
+cran.lw <- dnearneigh(st_centroid(cran.sf), d1 = 0, d2 = 1.25 * thresh) %>%  #1.25 showed lowest p-values
+  nb2listw(., style = "W")
+
+all.moran <- function(x) {
+  result <- moran.test(x, cran.lw) #run moran test on column
+  stat.name <-  deparse(substitute(x)) #convert column name to string
+  stat <- substr(stat.name, 9, 17) #extract stat name from full column name
+  df <- data.frame("stat"=stat,
+                   "moran" = as.numeric(result$estimate[1]), 
+                   "pval"=as.numeric(result[2]))
+  return(df)
+}
+
+#test all.moran - IT WORKS
+moran.test <- all.moran(cran.sf$GOL_mean)
+moran.test
+
+#error message
+moran.stats <- purrr::map_dfr(cran.sf[4:37], .f = all.moran)
+
+#error message
+moran.stats <- lapply(X=cran.sf[,6], MARGIN = 2, FUN = all.moran)
+```
