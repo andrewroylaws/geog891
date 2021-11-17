@@ -47,7 +47,7 @@ cran <- read_excel("../data/orig/India_Craniometric_Database_All_Data_4_Sept_201
 #                   returnGeometry = "true",      
 #                   f = "geojson")
 # request <- build_url(url)
-# 
+# https://gisapps.nsdi.gov.lk/server/rest/services/SLNSDI/Boundary/MapServer/7
 # srilanka <- st_read(request)
 ```
 
