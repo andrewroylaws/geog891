@@ -164,6 +164,13 @@ thresh <- rgeoda::min_distthreshold(cran.sf)
 cran.lw <- dnearneigh(st_centroid(cran.sf), d1 = 0, d2 = 1.25 * thresh) %>%  #1.25 showed lowest p-values
   nb2listw(., style = "W")
 
+# trying to drop geometry, as cran.sf$GOL_mean =/= cran.sf["GOL_mean"]
+# the latter keeps the geometry
+cran.df <- st_drop_geometry(cran.sf)
+```
+
+```{r moran.test}
+
 ### This section is where I was walk through error testing from a colleague, Seba ###
 # # the error now seems the same but is different, as 
 # purrr::map_dfr(cran.sf[4], .f = all.moran) # trows error
@@ -230,20 +237,51 @@ all.moran <- function(x) {
   return(df)
 }
 
-# trying to drop geometry, as cran.sf$GOL_mean =/= cran.sf["GOL_mean"]
-# the latter keeps the geometry
-cran.df <- st_drop_geometry(cran.sf)
-
 #map function
 moran.stats <- purrr::map_dfr(cran.df[3:36], .f = all.moran, .id = "variable")
 
 moran.stats
 ```
 
-```{r evaluate moran}
+```{r evaluate moran.test}
 #filter moran.stats to pval less than 0.05
 sig.moran <- moran.stats %>% filter(., pval <= 0.05)
 
 sig.moran
+```
+
+```{r moranmc}
+# function for moranmc
+all.moranmc <- function(x) {
+  result <- moran.mc(x, cran.lw, 10000, na.action = na.omit, zero.policy = TRUE) #run moran test on column
+  
+  
+  df <- data.frame("moran" = as.numeric(result$statistic), 
+                   "pval"=as.numeric(result$p.value))
+  return(df)
+}
+
+# the latter keeps the geometry
+cran.df <- st_drop_geometry(cran.sf)
+
+#map function
+moranmc.stats <- purrr::map_dfr(cran.df[3:36], .f = all.moranm, .id = "variable")
+
+moranmc.stats
+```
+
+```{r evalulate moran.mc}
+#filter moran.stats to pval less than 0.05
+sig.moranmc <- moranmc.stats %>% filter(., pval <= 0.05)
+
+sig.moranmc
+```
+
+```{r subset }
+#local moran for WFB_mean
+cran.sf$WFB_meanLI <- localmoran(cran.sf$WFB_mean, cran.lw)[, 1]
+
+tm_shape(cran.sf) +
+  tm_polygons(col = "WFB_meanLI")
 ```
 
