@@ -47,7 +47,7 @@ cran <- read_excel("../data/orig/India_Craniometric_Database_All_Data_4_Sept_201
 #                   returnGeometry = "true",      
 #                   f = "geojson")
 # request <- build_url(url)
-# 
+# https://gisapps.nsdi.gov.lk/server/rest/services/SLNSDI/Boundary/MapServer/7
 # srilanka <- st_read(request)
 ```
 
@@ -148,7 +148,7 @@ tm_shape(xcb.sf) +
   tm_polygons(col = "li")
 ```
 
-```{r morantest}
+```{r summarize_all}
 # summarize all by mean and median
 cran.stats <- cran %>% select(., -c(IndiaState, Sex)) %>% 
   group_by(ISOCODE) %>%
@@ -164,13 +164,12 @@ thresh <- rgeoda::min_distthreshold(cran.sf)
 cran.lw <- dnearneigh(st_centroid(cran.sf), d1 = 0, d2 = 1.25 * thresh) %>%  #1.25 showed lowest p-values
   nb2listw(., style = "W")
 
-#get range of moran I values (from textbook)
-moran.range <- function(lw) {
-  wmat <- listw2mat(lw)
-  return(range(eigen((wmat + t(wmat))/2) $values))
-}
+# trying to drop geometry, as cran.sf$GOL_mean =/= cran.sf["GOL_mean"]
+# the latter keeps the geometry
+cran.df <- st_drop_geometry(cran.sf)
+```
 
-print(moran.range(cran.lw))
+```{r moran.test}
 
 ### This section is where I was walk through error testing from a colleague, Seba ###
 # # the error now seems the same but is different, as 
@@ -231,16 +230,12 @@ print(moran.range(cran.lw))
 
 # function to calculate moran stats
 all.moran <- function(x) {
-  result <- moran.test(x, cran.lw, na.action = na.omit, zero.policy = TRUE, randomisation = FALSE) #run moran test on column
+  result <- moran.test(x, cran.lw, na.action = na.omit, zero.policy = TRUE) #run moran test on column
   
   df <- data.frame("moran" = as.numeric(result$estimate[1]), 
                    "pval"=as.numeric(result[2]))
   return(df)
 }
-
-# trying to drop geometry, as cran.sf$GOL_mean =/= cran.sf["GOL_mean"]
-# the latter keeps the geometry
-cran.df <- st_drop_geometry(cran.sf)
 
 #map function
 moran.stats <- purrr::map_dfr(cran.df[3:36], .f = all.moran, .id = "variable")
@@ -248,54 +243,45 @@ moran.stats <- purrr::map_dfr(cran.df[3:36], .f = all.moran, .id = "variable")
 moran.stats
 ```
 
-```{r evaluate moran}
+```{r evaluate moran.test}
 #filter moran.stats to pval less than 0.05
 sig.moran <- moran.stats %>% filter(., pval <= 0.05)
 
 sig.moran
 ```
 
-```{r moran mc}
-# summarize all by mean and median
-cran.stats <- cran %>% select(., -c(IndiaState, Sex)) %>% 
-  group_by(ISOCODE) %>%
-  summarise(across(everything(), list(mean=mean, medn=median)))
-
-# join tabluar and spatial data
-cran.sf <- inner_join(aoi, cran.stats, by = c("ISO_CODE" = "ISOCODE"))
-
-#calculate min threshold for distance bands
-thresh <- rgeoda::min_distthreshold(cran.sf)
-
-#calculate distance weights
-cran.lw <- dnearneigh(st_centroid(cran.sf), d1 = 0, d2 = 1.25 * thresh) %>%  #1.25 showed lowest p-values
-  nb2listw(., style = "W")
-
-#get range of moran I values (from textbook)
-moran.range <- function(lw) {
-  wmat <- listw2mat(lw)
-  return(range(eigen((wmat + t(wmat))/2) $values))
-}
-
-print(moran.range(cran.lw))
-
-#function to perform moran.mc
+```{r moranmc}
+# function for moranmc
 all.moranmc <- function(x) {
   result <- moran.mc(x, cran.lw, 10000, na.action = na.omit, zero.policy = TRUE) #run moran test on column
+  
   
   df <- data.frame("moran" = as.numeric(result$statistic), 
                    "pval"=as.numeric(result$p.value))
   return(df)
 }
 
-# trying to drop geometry, as cran.sf$GOL_mean =/= cran.sf["GOL_mean"]
 # the latter keeps the geometry
 cran.df <- st_drop_geometry(cran.sf)
 
 #map function
-moranmc.stats <- purrr::map_dfr(cran.df[3:36], .f = all.moranmc, .id = "variable") %>% 
-  filter(., pval < 0.05)
+moranmc.stats <- purrr::map_dfr(cran.df[3:36], .f = all.moranm, .id = "variable")
 
 moranmc.stats
+```
+
+```{r evalulate moran.mc}
+#filter moran.stats to pval less than 0.05
+sig.moranmc <- moranmc.stats %>% filter(., pval <= 0.05)
+
+sig.moranmc
+```
+
+```{r subset }
+#local moran for WFB_mean
+cran.sf$WFB_meanLI <- localmoran(cran.sf$WFB_mean, cran.lw)[, 1]
+
+tm_shape(cran.sf) +
+  tm_polygons(col = "WFB_meanLI")
 ```
 
