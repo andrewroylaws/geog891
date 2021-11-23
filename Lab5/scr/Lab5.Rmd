@@ -12,14 +12,72 @@ library(sf)
 library(tmap)
 library(leaflet)
 library(spdep)
+library(raster)
+library(grid)
+library(httr)
+
+#set crs
+crs <- st_crs("ESRI:102010")
 
 # data
-counties <- sf::read_sf("../data/CBW/County_Boundaries.shp") %>% sf::st_make_valid()
+CBWcounties <- sf::read_sf("../data/CBW/County_Boundaries.shp") %>% sf::st_make_valid() %>% 
+  st_transform(., crs=crs)
 
 bmps <- read_csv("../data/CBW/BMPreport2016_landbmps.csv", show_col_types = FALSE)
 
 aoi <- sf::read_sf("../data/aoi.shp") %>% sf::st_make_valid() %>% 
-  sf::st_transform(., "ESRI:102010") #set projection
+  sf::st_transform(., crs = crs) #set projection
+
+#state scale
+counties <- sf::read_sf("../data/County_Boundaries-_Census.shp") %>% st_make_valid() %>% 
+  st_transform(., crs=crs)
+
+state <- sf::read_sf("../data/Nebraska_State_Boundary.shp") %>% st_make_valid() %>% 
+  st_transform(., crs=crs)
+
+stparks <- sf::read_sf("../data/State_Park_Locations.shp") %>% st_make_valid() %>% 
+  st_transform(., crs=crs)
+
+streams <- sf::read_sf("../data/Streams_303_d_.shp") %>% st_make_valid() %>% 
+  st_transform(., crs=crs)
+
+#county scale
+lanc <- sf::read_sf("../data/lancaster_county.shp") %>% st_make_valid() %>% 
+  st_transform(., crs=crs)
+
+dem <- raster::raster("../data/lancaster_dem/lc_dem.tif")
+
+muni <- sf::read_sf("../data/Municipal_Boundaries.shp") %>% st_make_valid() %>% 
+  st_transform(., crs=crs)
+
+#second map data
+
+lnk <- filter(muni, NAME == "Lincoln")
+
+#get census tract data from ESRI Living Atlas
+url <- parse_url("https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services")
+url$path <- paste(url$path, "ACS_Poverty_by_Age_Boundaries/FeatureServer/2/query", sep = "/")
+url$query <- list(where = "State = 'Nebraska'",
+                  outFields = "*",                  
+                  returnGeometry = "true",                  
+                  f = "json")
+request <- build_url(url)
+
+tracts <- st_read(request) %>% dplyr::select(., GEOID: B17020_001E | B17020_002E | geometry) %>% 
+  mutate(., pov.perc = B17020_002E/B17020_001E * 100) %>%
+  st_transform(., crs=crs)
+
+lnk.tracts <- tracts[lnk,] #intersects with Lincoln to narrow dataset
+
+#lnk park boundares
+lnk.parks <- st_read("https://opendata.arcgis.com/datasets/d325c636525642f2b98bbebd37e22201_0.geojson") %>% #data from Lincoln OpenData
+  st_transform(., crs=crs)
+
+#lakes data and subset to Lancaster
+lakes <- st_read("https://opendata.arcgis.com/datasets/ed78e82b2727468f91cb3bc1f49f0042_2.geojson") %>% #data from NE OpenData
+  st_transform(., crs=crs)
+
+lnk.lakes <- lakes[lnk,] # intersects with Lincoln
 ```
 
 ## Task 1
@@ -33,7 +91,7 @@ tot.cost <- bmps %>% filter(., Cost > 0) %>% #filter out values of 0
   summarise(., TotalBMPCosts = as.numeric(format(round(sum(Cost),2), nsmall=2))) #trims costs to 2 decimal places to match currency
 
 #join tot.cost to counties on GEOID, drop counties with no BMP costs
-bmp.sf <- left_join(counties, tot.cost, by = c("GEOID10"="GEOID")) %>% 
+bmp.sf <- left_join(CBWcounties, tot.cost, by = c("GEOID10"="GEOID")) %>% 
   filter(., TotalBMPCosts > 0)
 
 #create bins and palette
@@ -69,16 +127,21 @@ aoi.lw <- poly2nb(aoi, queen = TRUE) %>% nb2listw(., style = "W")
 aoi$LI <- localmoran(aoi$oneparent, aoi.lw)[, 1]
 aoi$pval <- localmoran(aoi$oneparent, aoi.lw)[, 5]
 
+#covert aoi to WGS84, otherwise Leaflet will show single worldwide polygon
+aoi.wgs <- st_transform(aoi, crs = "EPSG:4326")
+
 #bins and palette
-max2 = max(aoi$LI) + 0.1
-min2 = min(aoi$LI) - 0.1
+max2 = max(aoi.wgs$LI) + 0.1
+min2 = min(aoi.wgs$LI) - 0.1
 dff2 = max2 - min2
 bins2 <- c(min2, max2-(0.75*dff2), max2-(0.5*dff2), max2-(0.25*dff2), max2)
-pal2 <- colorBin("Reds", domain = aoi$LI, bins=bins2)
+pal2 <- colorBin("Reds", domain = aoi.wgs$LI, bins=bins2)
 
 #make map
-task2 <- leaflet(aoi) %>% 
-  addProviderTiles(providers$Esri.WorldGrayCanvas) %>% 
+task2 <- leaflet(aoi.wgs) %>% 
+  addProviderTiles(providers$Esri.WorldGrayCanvas, group = "Gray Canvas (Default)") %>% 
+  addProviderTiles(providers$Stamen.TerrainBackground, group = "Stamen Terrain") %>% 
+  addProviderTiles(providers$OpenStreetMap, group = "OSM") %>% 
   addPolygons(fillColor = ~pal2(LI),
               weight = 1,
               opacity = 1,
@@ -88,10 +151,18 @@ task2 <- leaflet(aoi) %>%
   addLegend(pal = pal2,
             values = ~LI,
             title = "LISA", 
-            position = "bottomright")
+            position = "bottomright") %>% 
+  addLayersControl(
+    baseGroups = c("Gray Canvas (Default)", "Stamen Terrain", "OSM"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
   
 task2
+```
 
-tm_shape(aoi) + tm_polygons(col = "LI")
+```{r task3}
+# task3 <- leaflet() %>% 
+#recreate lab4 task 2
+  
 ```
 

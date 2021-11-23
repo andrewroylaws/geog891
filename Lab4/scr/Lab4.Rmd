@@ -71,7 +71,7 @@ lnk.parks <- st_read("https://opendata.arcgis.com/datasets/d325c636525642f2b98bb
 lakes <- st_read("https://opendata.arcgis.com/datasets/ed78e82b2727468f91cb3bc1f49f0042_2.geojson") %>% #data from NE OpenData
   st_transform(., crs=crs)
 
-lnk.lakes <- lakes[lnk,] # intersects with Lancaster county
+lnk.lakes <- lakes[lnk,] # intersects with Lincoln
 ```
 
 ```{r state map}
