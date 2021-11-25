@@ -52,7 +52,7 @@ muni <- sf::read_sf("../data/Municipal_Boundaries.shp") %>% st_make_valid() %>%
 
 #second map data
 
-lnk <- filter(muni, NAME == "Lincoln")
+lnk <- filter(muni, NAME == "Lincoln") %>% st_transform(., crs = "EPSG:4326")
 
 #get census tract data from ESRI Living Atlas
 url <- parse_url("https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services")
@@ -65,19 +65,20 @@ request <- build_url(url)
 
 tracts <- st_read(request) %>% dplyr::select(., GEOID: B17020_001E | B17020_002E | geometry) %>% 
   mutate(., pov.perc = B17020_002E/B17020_001E * 100) %>%
-  st_transform(., crs=crs)
+  st_transform(., crs="EPSG:4326")
 
-lnk.tracts <- tracts[lnk,] #intersects with Lincoln to narrow dataset
+lnk.tracts <- tracts[lnk,] %>% st_transform(., crs = "EPSG:4326") %>%  #intersects with Lincoln to narrow dataset
+  drop_na(., pov.perc)
 
 #lnk park boundares
 lnk.parks <- st_read("https://opendata.arcgis.com/datasets/d325c636525642f2b98bbebd37e22201_0.geojson") %>% #data from Lincoln OpenData
-  st_transform(., crs=crs)
+  st_transform(., crs = "EPSG:4326")
 
 #lakes data and subset to Lancaster
-lakes <- st_read("https://opendata.arcgis.com/datasets/ed78e82b2727468f91cb3bc1f49f0042_2.geojson") %>% #data from NE OpenData
-  st_transform(., crs=crs)
+lakes <- st_read("https://opendata.arcgis.com/datasets/ed78e82b2727468f91cb3bc1f49f0042_2.geojson") %>%  #data from NE OpenData 
+  st_transform(., crs = "EPSG:4326")
 
-lnk.lakes <- lakes[lnk,] # intersects with Lincoln
+lnk.lakes <- lakes[lnk,]  %>% st_transform(., crs = "EPSG:4326") # intersects with Lincoln
 ```
 
 ## Task 1
@@ -92,12 +93,13 @@ tot.cost <- bmps %>% filter(., Cost > 0) %>% #filter out values of 0
 
 #join tot.cost to counties on GEOID, drop counties with no BMP costs
 bmp.sf <- left_join(CBWcounties, tot.cost, by = c("GEOID10"="GEOID")) %>% 
-  filter(., TotalBMPCosts > 0)
+  filter(., TotalBMPCosts > 0) %>% 
+  st_transform(., crs = "EPSG:4326")
 
 #create bins and palette
-maxB  <- max(bmp.sf$TotalBMPCosts) + 1
-bins <- c(0, 0.2*maxB, 0.4*maxB, 0.6*maxB, 0.8*maxB,maxB) 
-pal <- colorBin("BuPu", domain = bmp.sf$TotalBMPCosts, bins=bins)
+maxB  <- max(bmp.sf$TotalBMPCosts) + 1 #find max value and add 1 for upper bin
+bins <- c(0, 0.2*maxB, 0.4*maxB, 0.6*maxB, 0.8*maxB,maxB) #create quantile classes programmaticaly
+pal <- colorBin("BuPu", domain = bmp.sf$TotalBMPCosts, bins=bins) #create palette
 
 task1 <- leaflet(bmp.sf) %>% 
   addTiles() %>% 
@@ -138,10 +140,10 @@ bins2 <- c(min2, max2-(0.75*dff2), max2-(0.5*dff2), max2-(0.25*dff2), max2)
 pal2 <- colorBin("Reds", domain = aoi.wgs$LI, bins=bins2)
 
 #make map
-task2 <- leaflet(aoi.wgs) %>% 
-  addProviderTiles(providers$Esri.WorldGrayCanvas, group = "Gray Canvas (Default)") %>% 
-  addProviderTiles(providers$Stamen.TerrainBackground, group = "Stamen Terrain") %>% 
-  addProviderTiles(providers$OpenStreetMap, group = "OSM") %>% 
+task2 <- leaflet(aoi.wgs) %>% #all data come from aoi.wgs
+  addProviderTiles(providers$Esri.WorldGrayCanvas, group = "Gray Canvas (Default)") %>% #default gray canvas
+  addProviderTiles(providers$Stamen.TerrainBackground, group = "Stamen Terrain") %>%  #terrain
+  addProviderTiles(providers$OpenStreetMap, group = "OSM") %>% #street map if needed
   addPolygons(fillColor = ~pal2(LI),
               weight = 1,
               opacity = 1,
@@ -153,7 +155,7 @@ task2 <- leaflet(aoi.wgs) %>%
             title = "LISA", 
             position = "bottomright") %>% 
   addLayersControl(
-    baseGroups = c("Gray Canvas (Default)", "Stamen Terrain", "OSM"),
+    baseGroups = c("Gray Canvas (Default)", "Stamen Terrain", "OSM"), #assign basegroups to provider tiles above
     options = layersControlOptions(collapsed = FALSE)
   )
   
@@ -161,8 +163,73 @@ task2
 ```
 
 ```{r task3}
-# task3 <- leaflet() %>% 
-#recreate lab4 task 2
-  
+#bins and palette
+max3 = max(lnk.tracts$pov.perc) + 0.1 #define max
+min3 = min(lnk.tracts$pov.perc) - 0.1 #define min
+dff3 = max3 - min3 #find difference
+bins3 <- c(min3, max3-(0.75*dff3), max3-(0.5*dff3), max3-(0.25*dff3), max3) #4 classes using difference ratios
+pal3 <- colorBin("YlOrRd", domain = lnk.tracts$pov.perc, bins=bins3)
+
+#steams wgs84
+streams.wgs <- streams %>% st_simplify(.) %>% #needed to simplify for leaflet
+  st_transform(., crs = "EPSG:4326")
+
+streams.wgs <- streams.wgs[lnk,]
+
+# make maps
+task3 <- leaflet() %>% #mapping more than one important data source so not added
+  addProviderTiles(providers$Esri.WorldGrayCanvas, group = "Gray Canvas (Default)") %>% 
+  addProviderTiles(providers$OpenStreetMap, group = "OSM") %>%
+  addRasterImage(dem, #add dem
+                 group = "DEM") %>% 
+  addPolygons(data = lnk.tracts, #add tracts and bins created above
+              fillColor = ~pal3(pov.perc),
+              weight = 1,
+              opacity = 1,
+              color = "gray",
+              fillOpacity = 0.9,
+              group = "Tracts") %>% 
+  addPolygons(data = lnk.parks, #add parks with green color
+              fillColor = "#098908",
+              weight = 0.25,
+              opacity = 1,
+              color = "black",
+              fillOpacity = 0.9,
+              group = "Parks") %>% 
+  addPolygons(data = lnk.lakes, #add lakes 
+              fillColor = "blue",
+              weight = 0.25,
+              opacity = 1,
+              color = "black",
+              fillOpacity = 0.9,
+              group = "Water") %>% #water group for lakes and streams
+  addPolylines(data = streams.wgs, #add streams
+               color = "blue",
+               weight = 2, #weight of 2 is good blend of visibility and not overdoing it
+               opacity = 1,
+               group = "Water") %>% #water group for lakes and streams
+  addLegend(data = lnk.tracts, #add legend for data of interest
+            pal = pal3,
+            values = ~pov.perc,
+            title = "% in Poverty",
+            position = "bottomright") %>%
+  addLayersControl(
+    baseGroups = c("Gray Canvas (Default)" ,"OSM"),
+    overlayGroups = c("DEM", "Tracts", "Parks", "Water"),
+    options = layersControlOptions(collapsed = FALSE)) %>% 
+  addMeasure() #add ability to measure distances between 
+
+task3
 ```
 
+## Questions
+
+### 1. Reflect on the labs from this semester. What did you learn? What did you like? What did you not
+### like?
+
+I learned an awful lot this semester. While I had previous experience with R, I didn't truly understand it until I got an opportunity to learn it in the spatial context. In particular, using the sf package and tidyverse together made spatial data manipulation so much faster than many of the GUI based GIS programs. In addition, I felt like I understand spatial analysis better and being able to script all of these steps made it stick. I really enjoyed the web mapping lab because the leaflet library makes mapping a cinch. ALso, cleaning and merging data in the earlier labs made the process really smooth the rest of the semester. I will say the labs did take longer to complete than I thought they would, even though I = had some previous R and programming experience. This could be a barrier for future students with less experience than myself. In addition, I felt the course did not have as much spatial analysis or advanced spatial analysis (autoregressions, etc) as I would have hoped but for learning GIS and basic SA it fit the bill perfectly.
+
+### 2. Describe the “one thing” you chose to add to your map in Task 3 above. What did you do, and why
+### is it applicable to your map?
+
+I chose to add the measuring tool so that if a user can measure distances from a respective location to the nearest park in order to understand poverty and the lack of equitable access to green spaces such as parks.
