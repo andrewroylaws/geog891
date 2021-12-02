@@ -17,6 +17,7 @@ library(spdep)
 library(rgeoda)
 library(stringr)
 library(gt)
+library(webshot)
 
 # crs info
 # South Asia Albers Equal Area Conic ESRI: 102028
@@ -257,7 +258,9 @@ mtest.table <- moran.stats %>% arrange(., pval) %>%
   fmt_number(., columns = c("Morans", "pval"),
              decimals = 3)
 
-mtest.table
+# export table as png
+#requires phantomjs, which is installed using webshot::install_phantonjs()
+# mtest.table %>% gtsave(., "morantest.png", path = "../charts")
 ```
 
 ```{r moranmc}
@@ -282,20 +285,24 @@ moranmc.stats
 
 ```{r create moran.mc table, include=FALSE}
 #create table
-moranmc.stats %>% arrange(., pval) %>% #sort least to greatest pval
+mmc.table <- moranmc.stats %>% arrange(., pval) %>% #sort least to greatest pval
   gt() %>% 
   tab_header(., 
              title = "Moran.mc Values",
              subtitle = "medn suffix equals median") %>% 
   fmt_number(., columns = c("Morans", "pval"),
              decimals = 3)
+
+# export table as png
+#requires phantomjs, which is installed using webshot::install_phantonjs()
+# mmc.table %>% gtsave(., "moranmc.png", path = "../charts") #uncomment to export
 ```
 
-```{r subset }
-#local moran for WFB_mean
-cran.sf$WFB_meanLI <- localmoran(cran.sf$WFB_mean, cran.lw)[, 1]
+```{r NLH Mean LISA}
+#local moran for NLH_mean
+cran.sf$NLH_meanLI <- localmoran(cran.sf$NLH_mean, cran.lw)[, 1]
 
 tm_shape(cran.sf) +
-  tm_polygons(col = "WFB_meanLI")
+  tm_polygons(col = "NLH_meanLI")
 ```
 
