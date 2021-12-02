@@ -40,6 +40,7 @@ cran <- read_excel("../data/orig/India_Craniometric_Database_All_Data_4_Sept_201
   dplyr::select(., IndiaState:ISOCODE | Sex:ASB | FOL:ZYB | UFHT:MAB) %>%  #clean up data columns
   filter(., ISOCODE != "INAN") #INAN removed (15 obs) due to physical distance from other polygons impacting analysis
 
+##NOT USED DUE TO UNSURE OF SRI LANKAN GOVERNMENT DATA POLICIES
 # bring in sri lanka geometry from AGOL feature service
 # library(httr)
 # url <- parse_url("https://gisapps.nsdi.gov.lk/server/rest/services")
@@ -169,6 +170,12 @@ cran.lw <- dnearneigh(st_centroid(cran.sf), d1 = 0, d2 = 1.25 * thresh) %>%  #1.
 # trying to drop geometry, as cran.sf$GOL_mean =/= cran.sf["GOL_mean"]
 # the latter keeps the geometry
 cran.df <- st_drop_geometry(cran.sf)
+
+# visualize states with cranium measurements from aoi
+tm_shape(aoi) + tm_polygons(col = "tan") +
+  tm_shape(cran.sf) + tm_polygons(col = "blue") +
+  tm_add_legend(labels = "Geographies with Measurements", col = "blue") +
+  tm_layout(title = "Study Area", title.bg.alpha = 0.7, title.bg.color = "white")
 ```
 
 ```{r moran.test}
@@ -268,7 +275,7 @@ mtest.table <- moran.stats %>% arrange(., pval) %>%
 all.moranmc <- function(x) {
   result <- moran.mc(x, cran.lw, 10000, na.action = na.omit, zero.policy = TRUE) #run moran mc on column
                                                                                 #10,000 iterations used as seen in 
-                                                                                #multiple examples
+                                                                                #multiple examples from book
   df <- data.frame("Morans" = as.numeric(result$statistic), 
                    "pval"=round(as.numeric(result$p.value), 3))
   
@@ -299,10 +306,41 @@ mmc.table <- moranmc.stats %>% arrange(., pval) %>% #sort least to greatest pval
 ```
 
 ```{r NLH Mean LISA}
-#local moran for NLH_mean
-cran.sf$NLH_meanLI <- localmoran(cran.sf$NLH_mean, cran.lw)[, 1]
+#filter out NA's as they interfere with localmoran
+NLHmean.sf <- cran.sf %>% filter(., !is.na(NLH_mean)) #don't use drop_na as that removes geometry
 
-tm_shape(cran.sf) +
-  tm_polygons(col = "NLH_meanLI")
+# create lw
+NLHmean.lw <- dnearneigh(st_centroid(NLHmean.sf), d1 = 0, d2 = 1.25 * thresh) %>%  #1.25 showed lowest p-values
+  nb2listw(., style = "W")
+
+
+#local moran for NLH_mean
+NLHmean.sf$NLH_meanLI <- spdep::localmoran(NLHmean.sf$NLH_mean, NLHmean.lw, na.action = na.omit, zero.policy = TRUE)[, 1]
+
+#create map
+tm_shape(aoi) + tm_polygons(col = "gray", alpha = 0.3) +
+  tm_shape(cran.sf) + tm_polygons(col = "blue") +
+  tm_add_legend(labels = "N/A", col = "blue") +
+  tm_shape(NLHmean.sf) + tm_polygons(col = "NLH_meanLI", title = "LISA") +
+  tm_layout(title = "NLH Mean LISAs", title.bg.color = "white", title.bg.alpha = 0.8)
 ```
 
+```{r NLH Median LISA}
+#filter out NA's as they interfere with localmoran
+NLHmedn.sf <- cran.sf %>% filter(., !is.na(NLH_medn)) #don't use drop_na as that removes geometry
+
+# create lw
+NLHmedn.lw <- dnearneigh(st_centroid(NLHmedn.sf), d1 = 0, d2 = 1.25 * thresh) %>%  #1.25 showed lowest p-values
+  nb2listw(., style = "W")
+
+
+#local moran for NLH_mean
+NLHmedn.sf$NLH_mednLI <- spdep::localmoran(NLHmedn.sf$NLH_medn, NLHmedn.lw, na.action = na.omit, zero.policy = TRUE)[, 1]
+
+#create map
+tm_shape(aoi) + tm_polygons(col = "gray", alpha = 0.3) +
+  tm_shape(cran.sf) + tm_polygons(col = "blue") +
+  tm_add_legend(labels = "N/A", col = "blue") +
+  tm_shape(NLHmedn.sf) + tm_polygons(col = "NLH_mednLI", title = "LISA") +
+  tm_layout(title = "NLH Median LISAs", title.bg.color = "white", title.bg.alpha = 0.8)
+```
