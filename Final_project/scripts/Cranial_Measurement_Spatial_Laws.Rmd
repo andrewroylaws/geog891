@@ -35,6 +35,9 @@ aoi <- bind_rows(states, srla) %>%  #rbind would not work due to different colum
   dplyr::select(., c(NAME, ISO_CODE, geometry)) %>%  #clean up tabular data to needed columns
   filter(., ISO_CODE != "INAN") #INAN removed (15 obs) due to physical distance from other polygons impacting analysis
 
+#INAN geometry
+inan <- states %>% filter(., ISO_CODE == "INAN")
+
 #cranium data
 cran <- read_excel("../data/orig/India_Craniometric_Database_All_Data_4_Sept_2013.xlsx", sheet="rdata") %>% 
   dplyr::select(., IndiaState:ISOCODE | Sex:ASB | FOL:ZYB | UFHT:MAB) %>%  #clean up data columns
@@ -174,7 +177,9 @@ cran.df <- st_drop_geometry(cran.sf)
 # visualize states with cranium measurements from aoi
 tm_shape(aoi) + tm_polygons(col = "tan") +
   tm_shape(cran.sf) + tm_polygons(col = "blue") +
+  tm_shape(inan) + tm_polygons(col = "red") +
   tm_add_legend(labels = "Geographies with Measurements", col = "blue") +
+  tm_add_legend(labels = "Excluded Geometries (INAN)", col = "red") +
   tm_layout(title = "Study Area", title.bg.alpha = 0.7, title.bg.color = "white")
 ```
 
