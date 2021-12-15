@@ -91,7 +91,7 @@ tm_shape(aoi) + tm_polygons(col = "#b9d7f0") + tm_shape(gol.sf) + tm_polygons(co
   tm_layout(title = "Study Area (red)")
 
 # # use knn to make up for sri lanka
-# gol.nn <- knn2nb(knearneigh(st_centroid(gol.sf), k = 2)) #used 3 neighbors as it showed lowest p-value
+# gol.nn <- knn2nb(knearneigh(st_centroid(gol.sf), k = e)) #used 3 neighbors as it showed lowest p-value
 # 
 # # get list of weights that are row standardized
 # gol.lw <- nb2listw(gol.nn, style = "W")
@@ -344,3 +344,9 @@ tm_shape(aoi) + tm_polygons(col = "gray", alpha = 0.3) +
   tm_shape(NLHmedn.sf) + tm_polygons(col = "NLH_mednLI", title = "LISA") +
   tm_layout(title = "NLH Median LISAs", title.bg.color = "white", title.bg.alpha = 0.8)
 ```
+
+```{r library list, echo=FALSE, include=FALSE}
+#get list of used libraries and versions
+installed.packages()[names(sessionInfo()$otherPkgs), "Version"]
+```
+
